@@ -1,0 +1,309 @@
+{
+  "intermediateFormatVersion": 1,
+  "source": {
+    "path": "test/fixtures/features-3.2.yaml",
+    "openapi": "3.2.0",
+    "title": "Features 3.2",
+    "version": "1.0.0"
+  },
+  "declarations": [
+    {
+      "name": "Item",
+      "kind": "components",
+      "source": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "pointer": "/components/schemas/Item",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "id",
+            "appName": "id",
+            "required": true,
+            "type": {
+              "kind": "string",
+              "constraints": {}
+            }
+          },
+          {
+            "name": "updated_at",
+            "appName": "updated_at",
+            "required": false,
+            "type": {
+              "kind": "string",
+              "constraints": {
+                "format": "date-time"
+              },
+              "codec": {
+                "kind": "date-time"
+              }
+            }
+          }
+        ],
+        "additional": true,
+        "constraints": {}
+      },
+      "transformed": true,
+      "runtime": true
+    },
+    {
+      "name": "SearchItemsRequest",
+      "kind": "request",
+      "source": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          }
+        }
+      },
+      "pointer": "/paths/~1search/query/requestBody/content/application~1json/schema",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "text",
+            "appName": "text",
+            "required": false,
+            "type": {
+              "kind": "string",
+              "constraints": {}
+            }
+          }
+        ],
+        "additional": true,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": true
+    },
+    {
+      "name": "ListItemsQuerystring",
+      "kind": "parameter",
+      "source": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "string"
+          },
+          "page": {
+            "type": "integer"
+          }
+        }
+      },
+      "pointer": "/paths/~1items/get/parameters/0/content",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "owner",
+            "appName": "owner",
+            "required": false,
+            "type": {
+              "kind": "string",
+              "constraints": {}
+            }
+          },
+          {
+            "name": "page",
+            "appName": "page",
+            "required": false,
+            "type": {
+              "kind": "number",
+              "integer": true,
+              "constraints": {}
+            }
+          }
+        ],
+        "additional": true,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": false
+    },
+    {
+      "name": "PurgeItemPathParameter",
+      "kind": "parameter",
+      "source": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        }
+      },
+      "pointer": "/paths/~1items~1{id}/additionalOperations/PURGE",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "id",
+            "appName": "id",
+            "required": true,
+            "type": {
+              "kind": "string",
+              "constraints": {}
+            }
+          }
+        ],
+        "additional": false,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": false
+    }
+  ],
+  "services": [
+    {
+      "name": "SearchService",
+      "folder": "search",
+      "operations": [
+        {
+          "name": "searchItems",
+          "operationId": "searchItems",
+          "method": "QUERY",
+          "path": "/search",
+          "parameters": {},
+          "requestBody": {
+            "contentType": "application/json",
+            "stream": false,
+            "type": {
+              "kind": "ref",
+              "name": "SearchItemsRequest"
+            },
+            "required": false
+          },
+          "responses": [
+            {
+              "status": "200",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "array",
+                "items": {
+                  "kind": "ref",
+                  "name": "Item"
+                },
+                "constraints": {}
+              },
+              "description": "matches"
+            }
+          ],
+          "success": [
+            "200"
+          ]
+        },
+        {
+          "name": "listItems",
+          "operationId": "listItems",
+          "method": "GET",
+          "path": "/items",
+          "parameters": {},
+          "querystring": {
+            "name": "filter",
+            "contentType": "application/x-www-form-urlencoded",
+            "type": {
+              "kind": "ref",
+              "name": "ListItemsQuerystring"
+            },
+            "required": false
+          },
+          "responses": [
+            {
+              "status": "200",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "array",
+                "items": {
+                  "kind": "ref",
+                  "name": "Item"
+                },
+                "constraints": {}
+              },
+              "description": "items"
+            }
+          ],
+          "success": [
+            "200"
+          ]
+        },
+        {
+          "name": "streamItems",
+          "operationId": "streamItems",
+          "method": "GET",
+          "path": "/items/stream",
+          "parameters": {},
+          "responses": [
+            {
+              "status": "200",
+              "contentType": "application/jsonl",
+              "stream": true,
+              "type": {
+                "kind": "ref",
+                "name": "Item"
+              },
+              "description": "one item per line"
+            }
+          ],
+          "success": [
+            "200"
+          ]
+        },
+        {
+          "name": "purgeItem",
+          "operationId": "purgeItem",
+          "method": "PURGE",
+          "path": "/items/{id}",
+          "parameters": {
+            "path": {
+              "declaration": "PurgeItemPathParameter",
+              "required": true,
+              "parameters": [
+                {
+                  "name": "id",
+                  "required": true,
+                  "type": {
+                    "kind": "string",
+                    "constraints": {}
+                  },
+                  "style": "simple",
+                  "explode": false
+                }
+              ]
+            }
+          },
+          "responses": [
+            {
+              "status": "204",
+              "contentType": "",
+              "stream": false,
+              "description": "purged"
+            }
+          ],
+          "success": [
+            "204"
+          ]
+        }
+      ]
+    }
+  ],
+  "hooks": {},
+  "warnings": []
+}

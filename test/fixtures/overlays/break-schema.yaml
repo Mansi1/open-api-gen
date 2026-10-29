@@ -1,0 +1,8 @@
+overlay: 1.0.0
+info:
+  title: Makes the document invalid, to prove validation runs after overlays
+  version: 1.0.0
+actions:
+  - target: $.components.schemas.Error
+    update:
+      type: 42

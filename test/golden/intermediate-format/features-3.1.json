@@ -1,0 +1,863 @@
+{
+  "intermediateFormatVersion": 1,
+  "source": {
+    "path": "test/fixtures/features-3.1.json",
+    "openapi": "3.1.2",
+    "title": "Features 3.1",
+    "version": "1.0.0"
+  },
+  "declarations": [
+    {
+      "name": "Shape",
+      "kind": "components",
+      "source": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/Circle"
+          },
+          {
+            "$ref": "#/components/schemas/Square"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind"
+        }
+      },
+      "pointer": "/components/schemas/Shape",
+      "type": {
+        "kind": "union",
+        "mode": "oneOf",
+        "members": [
+          {
+            "kind": "ref",
+            "name": "Circle"
+          },
+          {
+            "kind": "ref",
+            "name": "Square"
+          }
+        ],
+        "discriminator": {
+          "property": "kind",
+          "mapping": {
+            "Circle": "Circle",
+            "Square": "Square"
+          }
+        }
+      },
+      "transformed": false,
+      "runtime": true
+    },
+    {
+      "name": "Circle",
+      "kind": "components",
+      "source": {
+        "type": "object",
+        "required": [
+          "kind",
+          "radius"
+        ],
+        "properties": {
+          "kind": {
+            "const": "Circle"
+          },
+          "radius": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      },
+      "pointer": "/components/schemas/Circle",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "kind",
+            "appName": "kind",
+            "required": true,
+            "type": {
+              "kind": "literal",
+              "value": "Circle"
+            }
+          },
+          {
+            "name": "radius",
+            "appName": "radius",
+            "required": true,
+            "type": {
+              "kind": "number",
+              "integer": false,
+              "constraints": {
+                "minimum": 0
+              }
+            }
+          }
+        ],
+        "additional": true,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": true
+    },
+    {
+      "name": "Square",
+      "kind": "components",
+      "source": {
+        "type": "object",
+        "required": [
+          "kind",
+          "side"
+        ],
+        "properties": {
+          "kind": {
+            "const": "Square"
+          },
+          "side": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": false
+      },
+      "pointer": "/components/schemas/Square",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "kind",
+            "appName": "kind",
+            "required": true,
+            "type": {
+              "kind": "literal",
+              "value": "Square"
+            }
+          },
+          {
+            "name": "side",
+            "appName": "side",
+            "required": true,
+            "type": {
+              "kind": "number",
+              "integer": false,
+              "constraints": {}
+            }
+          }
+        ],
+        "additional": false,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": true
+    },
+    {
+      "name": "TreeNode",
+      "kind": "components",
+      "source": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TreeNode"
+            }
+          },
+          "parent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TreeNode"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "pointer": "/components/schemas/TreeNode",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "children",
+            "appName": "children",
+            "required": false,
+            "type": {
+              "kind": "array",
+              "items": {
+                "kind": "ref",
+                "name": "TreeNode"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "name": "name",
+            "appName": "name",
+            "required": true,
+            "type": {
+              "kind": "string",
+              "constraints": {}
+            }
+          },
+          {
+            "name": "parent",
+            "appName": "parent",
+            "required": false,
+            "type": {
+              "kind": "union",
+              "mode": "anyOf",
+              "members": [
+                {
+                  "kind": "ref",
+                  "name": "TreeNode"
+                },
+                {
+                  "kind": "null"
+                }
+              ]
+            }
+          }
+        ],
+        "additional": true,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": true
+    },
+    {
+      "name": "Labels",
+      "kind": "components",
+      "source": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "string"
+        }
+      },
+      "pointer": "/components/schemas/Labels",
+      "type": {
+        "kind": "object",
+        "properties": [],
+        "additional": {
+          "kind": "string",
+          "constraints": {}
+        },
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": false
+    },
+    {
+      "name": "Point",
+      "kind": "components",
+      "source": {
+        "type": "array",
+        "prefixItems": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "number"
+          }
+        ],
+        "items": false
+      },
+      "pointer": "/components/schemas/Point",
+      "type": {
+        "kind": "tuple",
+        "prefix": [
+          {
+            "kind": "number",
+            "integer": false,
+            "constraints": {}
+          },
+          {
+            "kind": "number",
+            "integer": false,
+            "constraints": {}
+          }
+        ],
+        "rest": false,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": false
+    },
+    {
+      "name": "Nullable",
+      "kind": "components",
+      "source": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "format": "int64"
+      },
+      "pointer": "/components/schemas/Nullable",
+      "type": {
+        "kind": "union",
+        "mode": "anyOf",
+        "members": [
+          {
+            "kind": "number",
+            "integer": true,
+            "constraints": {
+              "format": "int64"
+            },
+            "codec": {
+              "kind": "bigint"
+            }
+          },
+          {
+            "kind": "null"
+          }
+        ]
+      },
+      "transformed": true,
+      "runtime": false
+    },
+    {
+      "name": "WithDefs",
+      "kind": "components",
+      "source": {
+        "$defs": {
+          "Inner": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "type": "object",
+        "properties": {
+          "inner": {
+            "$ref": "#/components/schemas/WithDefs/$defs/Inner"
+          }
+        }
+      },
+      "pointer": "/components/schemas/WithDefs",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "inner",
+            "appName": "inner",
+            "required": false,
+            "type": {
+              "kind": "ref",
+              "name": "WithDefsInner"
+            }
+          }
+        ],
+        "additional": true,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": false
+    },
+    {
+      "name": "WithDefsInner",
+      "kind": "components",
+      "source": {
+        "type": "object",
+        "properties": {
+          "x": {
+            "type": "boolean"
+          }
+        }
+      },
+      "pointer": "/components/schemas/WithDefs/$defs/Inner",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "x",
+            "appName": "x",
+            "required": false,
+            "type": {
+              "kind": "boolean"
+            }
+          }
+        ],
+        "additional": true,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": false
+    },
+    {
+      "name": "Described",
+      "kind": "components",
+      "source": {
+        "$ref": "#/components/schemas/Labels",
+        "description": "sibling of $ref, legal in 3.1"
+      },
+      "pointer": "/components/schemas/Described",
+      "type": {
+        "kind": "ref",
+        "name": "Labels"
+      },
+      "transformed": false,
+      "runtime": false,
+      "description": "sibling of $ref, legal in 3.1"
+    },
+    {
+      "name": "Unsupported",
+      "kind": "components",
+      "source": {
+        "if": {
+          "type": "string"
+        },
+        "then": {
+          "minLength": 1
+        },
+        "not": {
+          "type": "null"
+        }
+      },
+      "pointer": "/components/schemas/Unsupported",
+      "type": {
+        "kind": "unknown"
+      },
+      "transformed": false,
+      "runtime": false
+    },
+    {
+      "name": "SnakeCase",
+      "kind": "components",
+      "source": {
+        "type": "object",
+        "required": [
+          "first_name"
+        ],
+        "properties": {
+          "first_name": {
+            "type": "string"
+          },
+          "last_login_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "birth_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "balance_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "labels": {
+            "$ref": "#/components/schemas/Labels"
+          }
+        }
+      },
+      "pointer": "/components/schemas/SnakeCase",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "balance_cents",
+            "appName": "balance_cents",
+            "required": false,
+            "type": {
+              "kind": "number",
+              "integer": true,
+              "constraints": {
+                "format": "int64"
+              },
+              "codec": {
+                "kind": "bigint"
+              }
+            }
+          },
+          {
+            "name": "birth_date",
+            "appName": "birth_date",
+            "required": false,
+            "type": {
+              "kind": "string",
+              "constraints": {
+                "format": "date"
+              },
+              "codec": {
+                "kind": "date"
+              }
+            }
+          },
+          {
+            "name": "first_name",
+            "appName": "first_name",
+            "required": true,
+            "type": {
+              "kind": "string",
+              "constraints": {}
+            }
+          },
+          {
+            "name": "labels",
+            "appName": "labels",
+            "required": false,
+            "type": {
+              "kind": "ref",
+              "name": "Labels"
+            }
+          },
+          {
+            "name": "last_login_at",
+            "appName": "last_login_at",
+            "required": false,
+            "type": {
+              "kind": "string",
+              "constraints": {
+                "format": "date-time"
+              },
+              "codec": {
+                "kind": "date-time"
+              }
+            }
+          }
+        ],
+        "additional": true,
+        "constraints": {}
+      },
+      "transformed": true,
+      "runtime": false
+    },
+    {
+      "name": "GetShapePathParameter",
+      "kind": "parameter",
+      "source": {
+        "type": "object",
+        "required": [
+          "shape_id"
+        ],
+        "properties": {
+          "shape_id": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]+$"
+          }
+        }
+      },
+      "pointer": "/paths/~1shapes~1{shape_id}/get",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "shape_id",
+            "appName": "shape_id",
+            "required": true,
+            "type": {
+              "kind": "string",
+              "constraints": {
+                "pattern": "^[a-z0-9-]+$"
+              }
+            }
+          }
+        ],
+        "additional": false,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": false
+    },
+    {
+      "name": "GetShapeCookieParameter",
+      "kind": "parameter",
+      "source": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "session": {
+            "type": "string"
+          }
+        }
+      },
+      "pointer": "/paths/~1shapes~1{shape_id}/get",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "session",
+            "appName": "session",
+            "required": false,
+            "type": {
+              "kind": "string",
+              "constraints": {}
+            }
+          }
+        ],
+        "additional": false,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": false
+    },
+    {
+      "name": "GetTreesResponse",
+      "kind": "response",
+      "source": {
+        "type": "object",
+        "required": [
+          "root"
+        ],
+        "properties": {
+          "root": {
+            "$ref": "#/components/schemas/TreeNode"
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "generated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      },
+      "pointer": "/paths/~1trees/get/responses/200/content/application~1json/schema",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "meta",
+            "appName": "meta",
+            "required": false,
+            "type": {
+              "kind": "ref",
+              "name": "GetTreesResponseMeta"
+            }
+          },
+          {
+            "name": "root",
+            "appName": "root",
+            "required": true,
+            "type": {
+              "kind": "ref",
+              "name": "TreeNode"
+            }
+          }
+        ],
+        "additional": true,
+        "constraints": {}
+      },
+      "transformed": true,
+      "runtime": true
+    },
+    {
+      "name": "GetTreesResponseMeta",
+      "kind": "response",
+      "source": {
+        "type": "object",
+        "properties": {
+          "generated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "pointer": "/paths/~1trees/get/responses/200/content/application~1json/schema/properties/meta",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "generated_at",
+            "appName": "generated_at",
+            "required": false,
+            "type": {
+              "kind": "string",
+              "constraints": {
+                "format": "date-time"
+              },
+              "codec": {
+                "kind": "date-time"
+              }
+            }
+          }
+        ],
+        "additional": true,
+        "constraints": {}
+      },
+      "transformed": true,
+      "runtime": true
+    },
+    {
+      "name": "PutUntaggedRequest",
+      "kind": "request",
+      "source": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string"
+          }
+        }
+      },
+      "pointer": "/paths/~1untagged/put/requestBody/content/application~1x-www-form-urlencoded/schema",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "q",
+            "appName": "q",
+            "required": false,
+            "type": {
+              "kind": "string",
+              "constraints": {}
+            }
+          }
+        ],
+        "additional": true,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": true
+    }
+  ],
+  "services": [
+    {
+      "name": "ShapesService",
+      "folder": "shapes",
+      "operations": [
+        {
+          "name": "getShape",
+          "operationId": "getShape",
+          "method": "GET",
+          "path": "/shapes/{shape_id}",
+          "parameters": {
+            "path": {
+              "declaration": "GetShapePathParameter",
+              "required": true,
+              "parameters": [
+                {
+                  "name": "shape_id",
+                  "required": true,
+                  "type": {
+                    "kind": "string",
+                    "constraints": {
+                      "pattern": "^[a-z0-9-]+$"
+                    }
+                  },
+                  "style": "simple",
+                  "explode": false
+                }
+              ]
+            },
+            "cookie": {
+              "declaration": "GetShapeCookieParameter",
+              "required": false,
+              "parameters": [
+                {
+                  "name": "session",
+                  "required": false,
+                  "type": {
+                    "kind": "string",
+                    "constraints": {}
+                  },
+                  "style": "form",
+                  "explode": true
+                }
+              ]
+            }
+          },
+          "responses": [
+            {
+              "status": "200",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "Shape"
+              },
+              "description": "ok"
+            }
+          ],
+          "success": [
+            "200"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "IssueCustomFieldValuesAppsService",
+      "folder": "issue-custom-field-values-apps",
+      "operations": [
+        {
+          "name": "getTrees",
+          "operationId": "getTrees",
+          "method": "GET",
+          "path": "/trees",
+          "parameters": {},
+          "responses": [
+            {
+              "status": "200",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "GetTreesResponse"
+              },
+              "description": "ok"
+            }
+          ],
+          "success": [
+            "200"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "DefaultService",
+      "folder": "default",
+      "operations": [
+        {
+          "name": "putUntagged",
+          "operationId": "putUntagged",
+          "method": "PUT",
+          "path": "/untagged",
+          "parameters": {},
+          "requestBody": {
+            "contentType": "application/x-www-form-urlencoded",
+            "stream": false,
+            "type": {
+              "kind": "ref",
+              "name": "PutUntaggedRequest"
+            },
+            "required": false
+          },
+          "responses": [
+            {
+              "status": "204",
+              "contentType": "",
+              "stream": false,
+              "description": "no content"
+            }
+          ],
+          "success": [
+            "204"
+          ]
+        }
+      ]
+    }
+  ],
+  "hooks": {},
+  "warnings": [
+    {
+      "pointer": "/components/schemas/Unsupported",
+      "message": "keyword \"if\" is not supported; it is ignored, so types and validation accept more than the schema allows"
+    },
+    {
+      "pointer": "/components/schemas/Unsupported",
+      "message": "keyword \"then\" is not supported; it is ignored, so types and validation accept more than the schema allows"
+    },
+    {
+      "pointer": "/components/schemas/Unsupported",
+      "message": "keyword \"not\" is not supported; it is ignored, so types and validation accept more than the schema allows"
+    }
+  ]
+}

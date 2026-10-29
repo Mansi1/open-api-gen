@@ -1,0 +1,12 @@
+openapi: 3.1.2
+info:
+  title: camelCase collision
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Clash:
+      type: object
+      properties:
+        user_id: { type: string }
+        userId: { type: string }

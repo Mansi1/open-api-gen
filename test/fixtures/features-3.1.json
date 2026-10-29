@@ -1,0 +1,101 @@
+{
+  "openapi": "3.1.2",
+  "info": { "title": "Features 3.1", "version": "1.0.0" },
+  "tags": [{ "name": "shapes" }, { "name": "Issue custom field values (apps)" }],
+  "paths": {
+    "/shapes/{shape_id}": {
+      "get": {
+        "operationId": "getShape",
+        "tags": ["shapes", "Issue custom field values (apps)"],
+        "parameters": [
+          { "name": "shape_id", "in": "path", "required": true, "schema": { "type": "string", "pattern": "^[a-z0-9-]+$" } },
+          { "name": "session", "in": "cookie", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "ok", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Shape" } } } }
+        }
+      }
+    },
+    "/trees": {
+      "get": {
+        "tags": ["Issue custom field values (apps)"],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["root"],
+                  "properties": {
+                    "root": { "$ref": "#/components/schemas/TreeNode" },
+                    "meta": { "type": "object", "properties": { "generated_at": { "type": "string", "format": "date-time" } } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/untagged": {
+      "put": {
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": { "schema": { "type": "object", "properties": { "q": { "type": "string" } } } }
+          }
+        },
+        "responses": { "204": { "description": "no content" } }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Shape": {
+        "oneOf": [{ "$ref": "#/components/schemas/Circle" }, { "$ref": "#/components/schemas/Square" }],
+        "discriminator": { "propertyName": "kind" }
+      },
+      "Circle": {
+        "type": "object",
+        "required": ["kind", "radius"],
+        "properties": { "kind": { "const": "Circle" }, "radius": { "type": "number", "minimum": 0 } }
+      },
+      "Square": {
+        "type": "object",
+        "required": ["kind", "side"],
+        "properties": { "kind": { "const": "Square" }, "side": { "type": "number" } },
+        "additionalProperties": false
+      },
+      "TreeNode": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "children": { "type": "array", "items": { "$ref": "#/components/schemas/TreeNode" } },
+          "parent": { "anyOf": [{ "$ref": "#/components/schemas/TreeNode" }, { "type": "null" }] }
+        }
+      },
+      "Labels": { "type": "object", "additionalProperties": { "type": "string" } },
+      "Point": { "type": "array", "prefixItems": [{ "type": "number" }, { "type": "number" }], "items": false },
+      "Nullable": { "type": ["integer", "null"], "format": "int64" },
+      "WithDefs": {
+        "$defs": { "Inner": { "type": "object", "properties": { "x": { "type": "boolean" } } } },
+        "type": "object",
+        "properties": { "inner": { "$ref": "#/components/schemas/WithDefs/$defs/Inner" } }
+      },
+      "Described": { "$ref": "#/components/schemas/Labels", "description": "sibling of $ref, legal in 3.1" },
+      "Unsupported": { "if": { "type": "string" }, "then": { "minLength": 1 }, "not": { "type": "null" } },
+      "SnakeCase": {
+        "type": "object",
+        "required": ["first_name"],
+        "properties": {
+          "first_name": { "type": "string" },
+          "last_login_at": { "type": "string", "format": "date-time" },
+          "birth_date": { "type": "string", "format": "date" },
+          "balance_cents": { "type": "integer", "format": "int64" },
+          "labels": { "$ref": "#/components/schemas/Labels" }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,10 @@
+overlay: 1.2.0
+info:
+  title: Retitle the petstore and drop its delete operation
+  version: 1.0.0
+actions:
+  - target: $.info
+    update:
+      title: Petstore (overlaid)
+  - target: $.paths['/pets/{petId}'].delete
+    remove: true

@@ -1,0 +1,27 @@
+openapi: 3.1.2
+info:
+  title: Union response with a transformed member
+  version: 1.0.0
+tags:
+  - name: events
+paths:
+  /events/latest:
+    get:
+      operationId: getLatestEvent
+      tags: [events]
+      responses:
+        '200':
+          description: The latest event, or null when there is none
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/Event'
+                  - type: 'null'
+components:
+  schemas:
+    Event:
+      type: object
+      required: [at]
+      properties:
+        at: { type: string, format: date-time }

@@ -1,0 +1,11 @@
+{
+  "input": "../examples/petstore-api.yaml",
+  "output": "../output/clients/petstore-app",
+  "overlay": "overlay.yaml",
+  "filter": { "tags": ["store"] },
+  "naming": { "properties": "camelCase" },
+  "formats": { "date-time": "Date" },
+  "transformers": {
+    "format:int64": { "type": "Decimal", "import": "../../../input/hooks/decimal.ts", "decode": "toDecimal", "encode": "fromDecimal" }
+  }
+}

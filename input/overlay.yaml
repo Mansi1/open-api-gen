@@ -1,0 +1,11 @@
+overlay: 1.2.0
+info:
+  title: E2E overlay for the petstore
+  version: 1.0.0
+actions:
+  - target: $.info
+    update:
+      title: Petstore store client (e2e)
+  - target: $.paths['/store/order/{orderId}'].get
+    update:
+      summary: Find a purchase order by id

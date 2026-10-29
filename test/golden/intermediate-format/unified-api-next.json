@@ -1,0 +1,2626 @@
+{
+  "intermediateFormatVersion": 1,
+  "source": {
+    "path": "examples/unified-api-next.yaml",
+    "openapi": "3.0.1",
+    "title": "Unified API",
+    "version": "1.0.1",
+    "description": "ClimatePartner Unified Integration Solutions API."
+  },
+  "declarations": [
+    {
+      "name": "OrderInfoRequestHeader",
+      "kind": "components",
+      "source": {
+        "properties": {
+          "description1": {
+            "description": "Will be shown in the ID tracking page (e.g. customer name)",
+            "maxLength": 255,
+            "type": "string"
+          },
+          "description2": {
+            "description": "Will be shown in the ID tracking page (e.g. order description)",
+            "maxLength": 255,
+            "type": "string"
+          },
+          "externalReference": {
+            "description": "Will not be shown on ID tracking; usually used for the accounting reference",
+            "maxLength": 128,
+            "type": "string"
+          }
+        },
+        "title": "OrderInfoRequestHeader",
+        "type": "object"
+      },
+      "pointer": "/components/schemas/OrderInfoRequestHeader",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "description1",
+            "appName": "description1",
+            "required": false,
+            "type": {
+              "kind": "string",
+              "constraints": {
+                "maxLength": 255
+              }
+            },
+            "description": "Will be shown in the ID tracking page (e.g. customer name)"
+          },
+          {
+            "name": "description2",
+            "appName": "description2",
+            "required": false,
+            "type": {
+              "kind": "string",
+              "constraints": {
+                "maxLength": 255
+              }
+            },
+            "description": "Will be shown in the ID tracking page (e.g. order description)"
+          },
+          {
+            "name": "externalReference",
+            "appName": "externalReference",
+            "required": false,
+            "type": {
+              "kind": "string",
+              "constraints": {
+                "maxLength": 128
+              }
+            },
+            "description": "Will not be shown on ID tracking; usually used for the accounting reference"
+          }
+        ],
+        "additional": true,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": true
+    },
+    {
+      "name": "OrderCollectiveOrderId",
+      "kind": "components",
+      "source": {
+        "properties": {
+          "collectiveOrderId": {
+            "description": "Internal orderId of collectiveOrder; used for later reference by subOrders",
+            "type": "string"
+          },
+          "fpmCollectiveOrderId": {
+            "description": "ID used by ClimatePartner Footprint Manager",
+            "type": "string"
+          }
+        },
+        "title": "OrderCollectiveOrderId",
+        "type": "object"
+      },
+      "pointer": "/components/schemas/OrderCollectiveOrderId",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "collectiveOrderId",
+            "appName": "collectiveOrderId",
+            "required": false,
+            "type": {
+              "kind": "string",
+              "constraints": {}
+            },
+            "description": "Internal orderId of collectiveOrder; used for later reference by subOrders"
+          },
+          {
+            "name": "fpmCollectiveOrderId",
+            "appName": "fpmCollectiveOrderId",
+            "required": false,
+            "type": {
+              "kind": "string",
+              "constraints": {}
+            },
+            "description": "ID used by ClimatePartner Footprint Manager"
+          }
+        ],
+        "additional": true,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": true
+    },
+    {
+      "name": "OrderInfoRequestFields",
+      "kind": "components",
+      "source": {
+        "properties": {
+          "emissionsInKg": {
+            "description": "Non-fractional kg quantity of emissions; e.g. 45677",
+            "type": "integer"
+          },
+          "externalReference": {
+            "description": "Used for the accounting reference",
+            "maxLength": 128,
+            "type": "string"
+          },
+          "projectId": {
+            "description": "Carbon offset project ID, e.g. 1345",
+            "minLength": 4,
+            "type": "integer"
+          },
+          "commitment": {
+            "description": "Status of order to be placed. draft: order is stored in system, cpId is issued but no CO2-certificates are reserved, all values (e. g. emissionsInKg) can be changed. fixed: order is stored in system, cpId is issued and CO2-certificates are reserved, certain values (e. g. emissionsInKg) can no longer be changed.",
+            "enum": [
+              "draft",
+              "fixed"
+            ],
+            "maxLength": 6,
+            "type": "string"
+          },
+          "language": {
+            "description": "Desired language of response",
+            "type": "string",
+            "enum": [
+              "de",
+              "en",
+              "fr",
+              "it",
+              "nl",
+              "se",
+              "es"
+            ],
+            "maxLength": 2
+          }
+        },
+        "type": "object",
+        "title": "OrderInfoRequestFields"
+      },
+      "pointer": "/components/schemas/OrderInfoRequestFields",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "commitment",
+            "appName": "commitment",
+            "required": false,
+            "type": {
+              "kind": "ref",
+              "name": "OrderInfoRequestFieldsCommitment"
+            },
+            "description": "Status of order to be placed. draft: order is stored in system, cpId is issued but no CO2-certificates are reserved, all values (e. g. emissionsInKg) can be changed. fixed: order is stored in system, cpId is issued and CO2-certificates are reserved, certain values (e. g. emissionsInKg) can no longer be changed."
+          },
+          {
+            "name": "emissionsInKg",
+            "appName": "emissionsInKg",
+            "required": false,
+            "type": {
+              "kind": "number",
+              "integer": true,
+              "constraints": {}
+            },
+            "description": "Non-fractional kg quantity of emissions; e.g. 45677"
+          },
+          {
+            "name": "externalReference",
+            "appName": "externalReference",
+            "required": false,
+            "type": {
+              "kind": "string",
+              "constraints": {
+                "maxLength": 128
+              }
+            },
+            "description": "Used for the accounting reference"
+          },
+          {
+            "name": "language",
+            "appName": "language",
+            "required": false,
+            "type": {
+              "kind": "ref",
+              "name": "OrderInfoRequestFieldsLanguage"
+            },
+            "description": "Desired language of response"
+          },
+          {
+            "name": "projectId",
+            "appName": "projectId",
+            "required": false,
+            "type": {
+              "kind": "number",
+              "integer": true,
+              "constraints": {
+                "minLength": 4
+              }
+            },
+            "description": "Carbon offset project ID, e.g. 1345"
+          }
+        ],
+        "additional": true,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": true
+    },
+    {
+      "name": "OrderInfoRequestFieldsCommitment",
+      "kind": "components",
+      "source": {
+        "description": "Status of order to be placed. draft: order is stored in system, cpId is issued but no CO2-certificates are reserved, all values (e. g. emissionsInKg) can be changed. fixed: order is stored in system, cpId is issued and CO2-certificates are reserved, certain values (e. g. emissionsInKg) can no longer be changed.",
+        "enum": [
+          "draft",
+          "fixed"
+        ],
+        "maxLength": 6,
+        "type": "string"
+      },
+      "pointer": "/components/schemas/OrderInfoRequestFields/properties/commitment",
+      "type": {
+        "kind": "enum",
+        "values": [
+          "draft",
+          "fixed"
+        ]
+      },
+      "transformed": false,
+      "runtime": true,
+      "description": "Status of order to be placed. draft: order is stored in system, cpId is issued but no CO2-certificates are reserved, all values (e. g. emissionsInKg) can be changed. fixed: order is stored in system, cpId is issued and CO2-certificates are reserved, certain values (e. g. emissionsInKg) can no longer be changed."
+    },
+    {
+      "name": "OrderInfoRequestFieldsLanguage",
+      "kind": "components",
+      "source": {
+        "description": "Desired language of response",
+        "type": "string",
+        "enum": [
+          "de",
+          "en",
+          "fr",
+          "it",
+          "nl",
+          "se",
+          "es"
+        ],
+        "maxLength": 2
+      },
+      "pointer": "/components/schemas/OrderInfoRequestFields/properties/language",
+      "type": {
+        "kind": "enum",
+        "values": [
+          "de",
+          "en",
+          "fr",
+          "it",
+          "nl",
+          "se",
+          "es"
+        ]
+      },
+      "transformed": false,
+      "runtime": true,
+      "description": "Desired language of response"
+    },
+    {
+      "name": "OrderCheckRequest",
+      "kind": "components",
+      "source": {
+        "properties": {
+          "emissionsInKg": {
+            "description": "Non-fractional kg quantity of emissions; e.g. 45677",
+            "type": "integer"
+          },
+          "projectId": {
+            "description": "Carbon offset project ID, e.g. 1345",
+            "minLength": 4,
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "required": [
+          "emissionsInKg",
+          "projectId"
+        ]
+      },
+      "pointer": "/components/schemas/OrderCheckRequest",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "emissionsInKg",
+            "appName": "emissionsInKg",
+            "required": true,
+            "type": {
+              "kind": "number",
+              "integer": true,
+              "constraints": {}
+            },
+            "description": "Non-fractional kg quantity of emissions; e.g. 45677"
+          },
+          {
+            "name": "projectId",
+            "appName": "projectId",
+            "required": true,
+            "type": {
+              "kind": "string",
+              "constraints": {
+                "minLength": 4
+              }
+            },
+            "description": "Carbon offset project ID, e.g. 1345"
+          }
+        ],
+        "additional": true,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": true
+    },
+    {
+      "name": "OrderInfoRequest",
+      "kind": "components",
+      "source": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/OrderInfoRequestHeader"
+          },
+          {
+            "$ref": "#/components/schemas/OrderInfoRequestFields"
+          },
+          {
+            "type": "object",
+            "required": [
+              "projectId",
+              "description1",
+              "description2",
+              "commitment",
+              "emissionsInKg"
+            ]
+          }
+        ],
+        "title": "OrderInfoRequest"
+      },
+      "pointer": "/components/schemas/OrderInfoRequest",
+      "type": {
+        "kind": "intersection",
+        "members": [
+          {
+            "kind": "ref",
+            "name": "OrderInfoRequestHeader"
+          },
+          {
+            "kind": "ref",
+            "name": "OrderInfoRequestFields"
+          },
+          {
+            "kind": "object",
+            "properties": [],
+            "additional": true,
+            "constraints": {}
+          }
+        ]
+      },
+      "transformed": false,
+      "runtime": true
+    },
+    {
+      "name": "OrderRequest",
+      "kind": "components",
+      "source": {
+        "properties": {
+          "orderInfo": {
+            "$ref": "#/components/schemas/OrderInfoRequest"
+          }
+        },
+        "title": "OrderRequest",
+        "type": "object"
+      },
+      "pointer": "/components/schemas/OrderRequest",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "orderInfo",
+            "appName": "orderInfo",
+            "required": false,
+            "type": {
+              "kind": "ref",
+              "name": "OrderInfoRequest"
+            }
+          }
+        ],
+        "additional": true,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": true
+    },
+    {
+      "name": "OrderInfoResponse",
+      "kind": "components",
+      "source": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/OrderInfoRequestHeader"
+          },
+          {
+            "$ref": "#/components/schemas/OrderInfoRequestFields"
+          },
+          {
+            "$ref": "#/components/schemas/Price"
+          },
+          {
+            "properties": {
+              "cpId": {
+                "description": "Current order cpId (raw 3-part identifier to be used for the tracking; see trackingUrl for the hashed/anonymous URL)",
+                "type": "string"
+              },
+              "orderId": {
+                "description": "Primary identifier (unique id) to reference the order on CP side (UUIDv4); this one is to be used for cancellation too",
+                "type": "string"
+              },
+              "fpmId": {
+                "description": "Internal order ID used by the ClimatePartner Footprint Manager",
+                "type": "string"
+              },
+              "status": {
+                "description": "Latest status of the order in journal (e.g. ORDER_PENDING)",
+                "type": "string"
+              },
+              "trackingUrl": {
+                "description": "e.g. https://fpm.climatepartner.com/tracking/f232761827cd7dbb1d4bf4e5f0cdca4c",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        ],
+        "title": "OrderInfoResponse"
+      },
+      "pointer": "/components/schemas/OrderInfoResponse",
+      "type": {
+        "kind": "intersection",
+        "members": [
+          {
+            "kind": "ref",
+            "name": "OrderInfoRequestHeader"
+          },
+          {
+            "kind": "ref",
+            "name": "OrderInfoRequestFields"
+          },
+          {
+            "kind": "ref",
+            "name": "Price"
+          },
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "cpId",
+                "appName": "cpId",
+                "required": false,
+                "type": {
+                  "kind": "string",
+                  "constraints": {}
+                },
+                "description": "Current order cpId (raw 3-part identifier to be used for the tracking; see trackingUrl for the hashed/anonymous URL)"
+              },
+              {
+                "name": "fpmId",
+                "appName": "fpmId",
+                "required": false,
+                "type": {
+                  "kind": "string",
+                  "constraints": {}
+                },
+                "description": "Internal order ID used by the ClimatePartner Footprint Manager"
+              },
+              {
+                "name": "orderId",
+                "appName": "orderId",
+                "required": false,
+                "type": {
+                  "kind": "string",
+                  "constraints": {}
+                },
+                "description": "Primary identifier (unique id) to reference the order on CP side (UUIDv4); this one is to be used for cancellation too"
+              },
+              {
+                "name": "status",
+                "appName": "status",
+                "required": false,
+                "type": {
+                  "kind": "string",
+                  "constraints": {}
+                },
+                "description": "Latest status of the order in journal (e.g. ORDER_PENDING)"
+              },
+              {
+                "name": "trackingUrl",
+                "appName": "trackingUrl",
+                "required": false,
+                "type": {
+                  "kind": "string",
+                  "constraints": {}
+                },
+                "description": "e.g. https://fpm.climatepartner.com/tracking/f232761827cd7dbb1d4bf4e5f0cdca4c"
+              }
+            ],
+            "additional": true,
+            "constraints": {}
+          }
+        ]
+      },
+      "transformed": false,
+      "runtime": true
+    },
+    {
+      "name": "OrderResponse",
+      "kind": "components",
+      "source": {
+        "properties": {
+          "result": {
+            "$ref": "#/components/schemas/OrderInfoResponse"
+          },
+          "status": {
+            "$ref": "#/components/schemas/StatusResponse"
+          }
+        },
+        "title": "OrderResponse",
+        "type": "object"
+      },
+      "pointer": "/components/schemas/OrderResponse",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "result",
+            "appName": "result",
+            "required": false,
+            "type": {
+              "kind": "ref",
+              "name": "OrderInfoResponse"
+            }
+          },
+          {
+            "name": "status",
+            "appName": "status",
+            "required": false,
+            "type": {
+              "kind": "ref",
+              "name": "StatusResponse"
+            }
+          }
+        ],
+        "additional": true,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": true
+    },
+    {
+      "name": "OrderCollectiveOrderResponse",
+      "kind": "components",
+      "source": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/OrderCollectiveOrderId"
+          },
+          {
+            "$ref": "#/components/schemas/OrderInfoRequestHeader"
+          },
+          {
+            "$ref": "#/components/schemas/Price"
+          },
+          {
+            "$ref": "#/components/schemas/StatusResponse"
+          },
+          {
+            "properties": {
+              "emissionsInKg": {
+                "description": "Cumulative emissions of all subOrders in collectiveOrder",
+                "type": "integer"
+              }
+            },
+            "type": "object"
+          }
+        ],
+        "title": "OrderCollectiveOrderResponse"
+      },
+      "pointer": "/components/schemas/OrderCollectiveOrderResponse",
+      "type": {
+        "kind": "intersection",
+        "members": [
+          {
+            "kind": "ref",
+            "name": "OrderCollectiveOrderId"
+          },
+          {
+            "kind": "ref",
+            "name": "OrderInfoRequestHeader"
+          },
+          {
+            "kind": "ref",
+            "name": "Price"
+          },
+          {
+            "kind": "ref",
+            "name": "StatusResponse"
+          },
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "emissionsInKg",
+                "appName": "emissionsInKg",
+                "required": false,
+                "type": {
+                  "kind": "number",
+                  "integer": true,
+                  "constraints": {}
+                },
+                "description": "Cumulative emissions of all subOrders in collectiveOrder"
+              }
+            ],
+            "additional": true,
+            "constraints": {}
+          }
+        ]
+      },
+      "transformed": false,
+      "runtime": true
+    },
+    {
+      "name": "OrderSubOrderResponse",
+      "kind": "components",
+      "source": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/OrderCollectiveOrderId"
+          },
+          {
+            "$ref": "#/components/schemas/OrderInfoResponse"
+          },
+          {
+            "$ref": "#/components/schemas/StatusResponse"
+          }
+        ],
+        "title": "OrderSubOrderResponse",
+        "type": "object"
+      },
+      "pointer": "/components/schemas/OrderSubOrderResponse",
+      "type": {
+        "kind": "intersection",
+        "members": [
+          {
+            "kind": "ref",
+            "name": "OrderCollectiveOrderId"
+          },
+          {
+            "kind": "ref",
+            "name": "OrderInfoResponse"
+          },
+          {
+            "kind": "ref",
+            "name": "StatusResponse"
+          },
+          {
+            "kind": "object",
+            "properties": [],
+            "additional": true,
+            "constraints": {}
+          }
+        ]
+      },
+      "transformed": false,
+      "runtime": true
+    },
+    {
+      "name": "OrderCheckResponse",
+      "kind": "components",
+      "source": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Price"
+          },
+          {
+            "$ref": "#/components/schemas/OrderCheckRequest"
+          },
+          {
+            "properties": {
+              "available": {
+                "enum": [
+                  "yes",
+                  "no"
+                ],
+                "description": "Flag for indicating whether the requested quantity is available for booking."
+              }
+            }
+          },
+          {
+            "$ref": "#/components/schemas/StatusResponse"
+          }
+        ],
+        "title": "OrderCheckResponse",
+        "type": "object"
+      },
+      "pointer": "/components/schemas/OrderCheckResponse",
+      "type": {
+        "kind": "intersection",
+        "members": [
+          {
+            "kind": "ref",
+            "name": "Price"
+          },
+          {
+            "kind": "ref",
+            "name": "OrderCheckRequest"
+          },
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "available",
+                "appName": "available",
+                "required": false,
+                "type": {
+                  "kind": "ref",
+                  "name": "OrderCheckResponseAvailable"
+                },
+                "description": "Flag for indicating whether the requested quantity is available for booking."
+              }
+            ],
+            "additional": true,
+            "constraints": {}
+          },
+          {
+            "kind": "ref",
+            "name": "StatusResponse"
+          },
+          {
+            "kind": "object",
+            "properties": [],
+            "additional": true,
+            "constraints": {}
+          }
+        ]
+      },
+      "transformed": false,
+      "runtime": true
+    },
+    {
+      "name": "OrderCheckResponseAvailable",
+      "kind": "components",
+      "source": {
+        "enum": [
+          "yes",
+          "no"
+        ],
+        "description": "Flag for indicating whether the requested quantity is available for booking."
+      },
+      "pointer": "/components/schemas/OrderCheckResponse/allOf/2/properties/available",
+      "type": {
+        "kind": "enum",
+        "values": [
+          "yes",
+          "no"
+        ]
+      },
+      "transformed": false,
+      "runtime": true,
+      "description": "Flag for indicating whether the requested quantity is available for booking."
+    },
+    {
+      "name": "Price",
+      "kind": "components",
+      "source": {
+        "properties": {
+          "price": {
+            "description": "Price for offsetting the emissions in emissionsInKg with 2 decimals",
+            "type": "number"
+          },
+          "handlingFee": {
+            "description": "Handling fee for offset order if configured in the account settings",
+            "type": "number"
+          },
+          "currency": {
+            "description": "3-digit ISO code for currency of price",
+            "enum": [
+              "EUR",
+              "GBP",
+              "CHF"
+            ],
+            "type": "string",
+            "maxLength": 3
+          }
+        },
+        "title": "Price",
+        "type": "object"
+      },
+      "pointer": "/components/schemas/Price",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "currency",
+            "appName": "currency",
+            "required": false,
+            "type": {
+              "kind": "ref",
+              "name": "PriceCurrency"
+            },
+            "description": "3-digit ISO code for currency of price"
+          },
+          {
+            "name": "handlingFee",
+            "appName": "handlingFee",
+            "required": false,
+            "type": {
+              "kind": "number",
+              "integer": false,
+              "constraints": {}
+            },
+            "description": "Handling fee for offset order if configured in the account settings"
+          },
+          {
+            "name": "price",
+            "appName": "price",
+            "required": false,
+            "type": {
+              "kind": "number",
+              "integer": false,
+              "constraints": {}
+            },
+            "description": "Price for offsetting the emissions in emissionsInKg with 2 decimals"
+          }
+        ],
+        "additional": true,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": true
+    },
+    {
+      "name": "PriceCurrency",
+      "kind": "components",
+      "source": {
+        "description": "3-digit ISO code for currency of price",
+        "enum": [
+          "EUR",
+          "GBP",
+          "CHF"
+        ],
+        "type": "string",
+        "maxLength": 3
+      },
+      "pointer": "/components/schemas/Price/properties/currency",
+      "type": {
+        "kind": "enum",
+        "values": [
+          "EUR",
+          "GBP",
+          "CHF"
+        ]
+      },
+      "transformed": false,
+      "runtime": true,
+      "description": "3-digit ISO code for currency of price"
+    },
+    {
+      "name": "ProjectInfoResponse",
+      "kind": "components",
+      "source": {
+        "properties": {
+          "projectId": {
+            "description": "ID of carbon offset project",
+            "type": "string",
+            "minLength": 4
+          },
+          "name": {
+            "description": "Name of the project",
+            "maxLength": 55,
+            "type": "string"
+          },
+          "technology": {
+            "description": "Technology of the project",
+            "maxLength": 55,
+            "type": "string"
+          },
+          "region": {
+            "description": "Region of the project",
+            "maxLength": 55,
+            "type": "string"
+          },
+          "country": {
+            "description": "Country of the project",
+            "maxLength": 55,
+            "type": "string"
+          },
+          "verificationType": {
+            "description": "Type of verification of the project; e. g. VCS",
+            "maxLength": 55,
+            "type": "string"
+          },
+          "website": {
+            "description": "URL of project website on climatepartner.com",
+            "maxLength": 255,
+            "type": "string"
+          },
+          "availableQuantity": {
+            "description": "Remaining offset capacity of the project in kg",
+            "type": "integer"
+          },
+          "price": {
+            "description": "Net (no VAT) price per kg in this project",
+            "type": "number"
+          },
+          "currency": {
+            "description": "3-digit ISO currency of project price",
+            "maxLength": 3,
+            "enum": [
+              "EUR",
+              "CHF",
+              "GBP"
+            ]
+          },
+          "unit": {
+            "description": "Unit of CO2e in this project; e. g. kg CO2",
+            "maxLength": 10,
+            "type": "string"
+          }
+        },
+        "title": "ProjectInfoResponse",
+        "type": "object"
+      },
+      "pointer": "/components/schemas/ProjectInfoResponse",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "availableQuantity",
+            "appName": "availableQuantity",
+            "required": false,
+            "type": {
+              "kind": "number",
+              "integer": true,
+              "constraints": {}
+            },
+            "description": "Remaining offset capacity of the project in kg"
+          },
+          {
+            "name": "country",
+            "appName": "country",
+            "required": false,
+            "type": {
+              "kind": "string",
+              "constraints": {
+                "maxLength": 55
+              }
+            },
+            "description": "Country of the project"
+          },
+          {
+            "name": "currency",
+            "appName": "currency",
+            "required": false,
+            "type": {
+              "kind": "ref",
+              "name": "ProjectInfoResponseCurrency"
+            },
+            "description": "3-digit ISO currency of project price"
+          },
+          {
+            "name": "name",
+            "appName": "name",
+            "required": false,
+            "type": {
+              "kind": "string",
+              "constraints": {
+                "maxLength": 55
+              }
+            },
+            "description": "Name of the project"
+          },
+          {
+            "name": "price",
+            "appName": "price",
+            "required": false,
+            "type": {
+              "kind": "number",
+              "integer": false,
+              "constraints": {}
+            },
+            "description": "Net (no VAT) price per kg in this project"
+          },
+          {
+            "name": "projectId",
+            "appName": "projectId",
+            "required": false,
+            "type": {
+              "kind": "string",
+              "constraints": {
+                "minLength": 4
+              }
+            },
+            "description": "ID of carbon offset project"
+          },
+          {
+            "name": "region",
+            "appName": "region",
+            "required": false,
+            "type": {
+              "kind": "string",
+              "constraints": {
+                "maxLength": 55
+              }
+            },
+            "description": "Region of the project"
+          },
+          {
+            "name": "technology",
+            "appName": "technology",
+            "required": false,
+            "type": {
+              "kind": "string",
+              "constraints": {
+                "maxLength": 55
+              }
+            },
+            "description": "Technology of the project"
+          },
+          {
+            "name": "unit",
+            "appName": "unit",
+            "required": false,
+            "type": {
+              "kind": "string",
+              "constraints": {
+                "maxLength": 10
+              }
+            },
+            "description": "Unit of CO2e in this project; e. g. kg CO2"
+          },
+          {
+            "name": "verificationType",
+            "appName": "verificationType",
+            "required": false,
+            "type": {
+              "kind": "string",
+              "constraints": {
+                "maxLength": 55
+              }
+            },
+            "description": "Type of verification of the project; e. g. VCS"
+          },
+          {
+            "name": "website",
+            "appName": "website",
+            "required": false,
+            "type": {
+              "kind": "string",
+              "constraints": {
+                "maxLength": 255
+              }
+            },
+            "description": "URL of project website on climatepartner.com"
+          }
+        ],
+        "additional": true,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": true
+    },
+    {
+      "name": "ProjectInfoResponseCurrency",
+      "kind": "components",
+      "source": {
+        "description": "3-digit ISO currency of project price",
+        "maxLength": 3,
+        "enum": [
+          "EUR",
+          "CHF",
+          "GBP"
+        ]
+      },
+      "pointer": "/components/schemas/ProjectInfoResponse/properties/currency",
+      "type": {
+        "kind": "enum",
+        "values": [
+          "EUR",
+          "CHF",
+          "GBP"
+        ]
+      },
+      "transformed": false,
+      "runtime": true,
+      "description": "3-digit ISO currency of project price"
+    },
+    {
+      "name": "ProjectInfoResponseList",
+      "kind": "components",
+      "source": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/ProjectInfoResponse"
+        }
+      },
+      "pointer": "/components/schemas/ProjectInfoResponseList",
+      "type": {
+        "kind": "array",
+        "items": {
+          "kind": "ref",
+          "name": "ProjectInfoResponse"
+        },
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": true
+    },
+    {
+      "name": "StatusResponse",
+      "kind": "components",
+      "source": {
+        "properties": {
+          "message": {
+            "description": "Status message explaining the error",
+            "type": "string"
+          },
+          "type": {
+            "description": "Can be \"SUCCESS\" or \"ERROR\"",
+            "enum": [
+              "SUCCESS",
+              "ERROR"
+            ],
+            "type": "string"
+          }
+        },
+        "title": "StatusResponse",
+        "type": "object"
+      },
+      "pointer": "/components/schemas/StatusResponse",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "message",
+            "appName": "message",
+            "required": false,
+            "type": {
+              "kind": "string",
+              "constraints": {}
+            },
+            "description": "Status message explaining the error"
+          },
+          {
+            "name": "type",
+            "appName": "type",
+            "required": false,
+            "type": {
+              "kind": "ref",
+              "name": "StatusResponseType"
+            },
+            "description": "Can be \"SUCCESS\" or \"ERROR\""
+          }
+        ],
+        "additional": true,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": true
+    },
+    {
+      "name": "StatusResponseType",
+      "kind": "components",
+      "source": {
+        "description": "Can be \"SUCCESS\" or \"ERROR\"",
+        "enum": [
+          "SUCCESS",
+          "ERROR"
+        ],
+        "type": "string"
+      },
+      "pointer": "/components/schemas/StatusResponse/properties/type",
+      "type": {
+        "kind": "enum",
+        "values": [
+          "SUCCESS",
+          "ERROR"
+        ]
+      },
+      "transformed": false,
+      "runtime": true,
+      "description": "Can be \"SUCCESS\" or \"ERROR\""
+    },
+    {
+      "name": "GetOrderV2IndividualOrderByOrderIdPathParameter",
+      "kind": "parameter",
+      "source": {
+        "type": "object",
+        "required": [
+          "orderId"
+        ],
+        "properties": {
+          "orderId": {
+            "type": "string"
+          }
+        }
+      },
+      "pointer": "/paths/~1order~1v2~1individualOrder~1{orderId}/get",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "orderId",
+            "appName": "orderId",
+            "required": true,
+            "type": {
+              "kind": "string",
+              "constraints": {}
+            }
+          }
+        ],
+        "additional": false,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": false
+    },
+    {
+      "name": "DeleteOrderV2IndividualOrderByOrderIdPathParameter",
+      "kind": "parameter",
+      "source": {
+        "type": "object",
+        "required": [
+          "orderId"
+        ],
+        "properties": {
+          "orderId": {
+            "type": "string"
+          }
+        }
+      },
+      "pointer": "/paths/~1order~1v2~1individualOrder~1{orderId}/delete",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "orderId",
+            "appName": "orderId",
+            "required": true,
+            "type": {
+              "kind": "string",
+              "constraints": {}
+            }
+          }
+        ],
+        "additional": false,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": false
+    },
+    {
+      "name": "PatchOrderV2IndividualOrderByOrderIdPathParameter",
+      "kind": "parameter",
+      "source": {
+        "type": "object",
+        "required": [
+          "orderId"
+        ],
+        "properties": {
+          "orderId": {
+            "$ref": "#/components/schemas/OrderRequest"
+          }
+        }
+      },
+      "pointer": "/paths/~1order~1v2~1individualOrder~1{orderId}/patch",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "orderId",
+            "appName": "orderId",
+            "required": true,
+            "type": {
+              "kind": "ref",
+              "name": "OrderRequest"
+            }
+          }
+        ],
+        "additional": false,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": false
+    },
+    {
+      "name": "GetOrderV2CollectiveOrderByCollectiveOrderIdPathParameter",
+      "kind": "parameter",
+      "source": {
+        "type": "object",
+        "required": [
+          "collectiveOrderId"
+        ],
+        "properties": {
+          "collectiveOrderId": {
+            "type": "string"
+          }
+        }
+      },
+      "pointer": "/paths/~1order~1v2~1collectiveOrder~1{collectiveOrderId}/get",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "collectiveOrderId",
+            "appName": "collectiveOrderId",
+            "required": true,
+            "type": {
+              "kind": "string",
+              "constraints": {}
+            }
+          }
+        ],
+        "additional": false,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": false
+    },
+    {
+      "name": "PostOrderV2SubOrderByCollectiveOrderIdPathParameter",
+      "kind": "parameter",
+      "source": {
+        "type": "object",
+        "required": [
+          "collectiveOrderId"
+        ],
+        "properties": {
+          "collectiveOrderId": {
+            "type": "string"
+          }
+        }
+      },
+      "pointer": "/paths/~1order~1v2~1subOrder~1{collectiveOrderId}/post",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "collectiveOrderId",
+            "appName": "collectiveOrderId",
+            "required": true,
+            "type": {
+              "kind": "string",
+              "constraints": {}
+            }
+          }
+        ],
+        "additional": false,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": false
+    },
+    {
+      "name": "GetOrderV2SubOrderByOrderIdPathParameter",
+      "kind": "parameter",
+      "source": {
+        "type": "object",
+        "required": [
+          "orderId"
+        ],
+        "properties": {
+          "orderId": {
+            "type": "string"
+          }
+        }
+      },
+      "pointer": "/paths/~1order~1v2~1subOrder~1{orderId}/get",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "orderId",
+            "appName": "orderId",
+            "required": true,
+            "type": {
+              "kind": "string",
+              "constraints": {}
+            }
+          }
+        ],
+        "additional": false,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": false
+    },
+    {
+      "name": "DeleteOrderV2SubOrderByOrderIdPathParameter",
+      "kind": "parameter",
+      "source": {
+        "type": "object",
+        "required": [
+          "orderId"
+        ],
+        "properties": {
+          "orderId": {
+            "type": "string"
+          }
+        }
+      },
+      "pointer": "/paths/~1order~1v2~1subOrder~1{orderId}/delete",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "orderId",
+            "appName": "orderId",
+            "required": true,
+            "type": {
+              "kind": "string",
+              "constraints": {}
+            }
+          }
+        ],
+        "additional": false,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": false
+    },
+    {
+      "name": "PatchOrderV2SubOrderByOrderIdPathParameter",
+      "kind": "parameter",
+      "source": {
+        "type": "object",
+        "required": [
+          "orderId"
+        ],
+        "properties": {
+          "orderId": {
+            "$ref": "#/components/schemas/OrderInfoRequest"
+          }
+        }
+      },
+      "pointer": "/paths/~1order~1v2~1subOrder~1{orderId}/patch",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "orderId",
+            "appName": "orderId",
+            "required": true,
+            "type": {
+              "kind": "ref",
+              "name": "OrderInfoRequest"
+            }
+          }
+        ],
+        "additional": false,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": false
+    }
+  ],
+  "services": [
+    {
+      "name": "IndividualOrderEmissionsService",
+      "folder": "individual-order-emissions",
+      "description": "Offset management service",
+      "operations": [
+        {
+          "name": "postOrderV2IndividualOrder",
+          "operationId": "postOrderV2IndividualOrder",
+          "method": "POST",
+          "path": "/order/v2/individualOrder",
+          "summary": "Creates one or many individual orders",
+          "parameters": {},
+          "requestBody": {
+            "contentType": "application/json",
+            "stream": false,
+            "type": {
+              "kind": "ref",
+              "name": "OrderRequest"
+            },
+            "required": true
+          },
+          "responses": [
+            {
+              "status": "200",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "OrderResponse"
+              },
+              "description": "OK; Order has been booked / scheduled correctly"
+            },
+            {
+              "status": "400",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Bad Request; Validation failed; missing parameters, wrong format, price mismatch, wrong project id, non-supported currency"
+            },
+            {
+              "status": "401",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Unauthorized; Authentication failed"
+            },
+            {
+              "status": "403",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Forbidden; Authentication correct but permissions missing"
+            },
+            {
+              "status": "422",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Unprocessable Entity; this offset has been scheduled already"
+            },
+            {
+              "status": "500",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Internal Server Error; Unexpected internal error"
+            }
+          ],
+          "success": [
+            "200"
+          ]
+        },
+        {
+          "name": "getOrderV2IndividualOrderByOrderId",
+          "operationId": "getOrderV2IndividualOrderByOrderId",
+          "method": "GET",
+          "path": "/order/v2/individualOrder/{orderId}",
+          "summary": "Returns the existing order {orderId}",
+          "parameters": {
+            "path": {
+              "declaration": "GetOrderV2IndividualOrderByOrderIdPathParameter",
+              "required": true,
+              "parameters": [
+                {
+                  "name": "orderId",
+                  "required": true,
+                  "type": {
+                    "kind": "string",
+                    "constraints": {}
+                  },
+                  "style": "simple",
+                  "explode": false
+                }
+              ]
+            }
+          },
+          "responses": [
+            {
+              "status": "200",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "OrderResponse"
+              },
+              "description": "OK"
+            },
+            {
+              "status": "400",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Bad Request; Validation failed / wrong parameter format"
+            },
+            {
+              "status": "401",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Unauthorized"
+            },
+            {
+              "status": "403",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Forbidden"
+            },
+            {
+              "status": "404",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Not Found; Order with this id has not been booked / scheduled before"
+            },
+            {
+              "status": "500",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Internal Server Error"
+            }
+          ],
+          "success": [
+            "200"
+          ]
+        },
+        {
+          "name": "deleteOrderV2IndividualOrderByOrderId",
+          "operationId": "deleteOrderV2IndividualOrderByOrderId",
+          "method": "DELETE",
+          "path": "/order/v2/individualOrder/{orderId}",
+          "summary": "Cancels (and refunds; depending on payment) the existing order {orderId}",
+          "parameters": {
+            "path": {
+              "declaration": "DeleteOrderV2IndividualOrderByOrderIdPathParameter",
+              "required": true,
+              "parameters": [
+                {
+                  "name": "orderId",
+                  "required": true,
+                  "type": {
+                    "kind": "string",
+                    "constraints": {}
+                  },
+                  "style": "simple",
+                  "explode": false
+                }
+              ]
+            }
+          },
+          "responses": [
+            {
+              "status": "200",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "OrderResponse"
+              },
+              "description": "OK"
+            },
+            {
+              "status": "400",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Bad Request; Validation failed / wrong parameter format"
+            },
+            {
+              "status": "401",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Unauthorized"
+            },
+            {
+              "status": "403",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Forbidden"
+            },
+            {
+              "status": "404",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Not Found; Offset with this id has not been scheduled before"
+            },
+            {
+              "status": "500",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Internal Server Error"
+            }
+          ],
+          "success": [
+            "200"
+          ]
+        },
+        {
+          "name": "patchOrderV2IndividualOrderByOrderId",
+          "operationId": "patchOrderV2IndividualOrderByOrderId",
+          "method": "PATCH",
+          "path": "/order/v2/individualOrder/{orderId}",
+          "summary": "Updates an existing order {orderId}",
+          "parameters": {
+            "path": {
+              "declaration": "PatchOrderV2IndividualOrderByOrderIdPathParameter",
+              "required": true,
+              "parameters": [
+                {
+                  "name": "orderId",
+                  "required": true,
+                  "type": {
+                    "kind": "ref",
+                    "name": "OrderRequest"
+                  },
+                  "style": "simple",
+                  "explode": false
+                }
+              ]
+            }
+          },
+          "responses": [
+            {
+              "status": "200",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "OrderResponse"
+              },
+              "description": "OK"
+            },
+            {
+              "status": "400",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Bad Request; Validation failed / wrong parameter format"
+            },
+            {
+              "status": "401",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Unauthorized"
+            },
+            {
+              "status": "403",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Forbidden. Change is not possible."
+            },
+            {
+              "status": "404",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Not Found; Order with this id has not been booked / scheduled before"
+            },
+            {
+              "status": "500",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Internal Server Error"
+            }
+          ],
+          "success": [
+            "200"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CollectiveAndSubordersEmissionsService",
+      "folder": "collective-and-suborders-emissions",
+      "description": "Offset management service",
+      "operations": [
+        {
+          "name": "postOrderV2CollectiveOrder",
+          "operationId": "postOrderV2CollectiveOrder",
+          "method": "POST",
+          "path": "/order/v2/collectiveOrder",
+          "summary": "Creates a collective order",
+          "parameters": {},
+          "requestBody": {
+            "contentType": "application/json",
+            "stream": false,
+            "type": {
+              "kind": "ref",
+              "name": "OrderInfoRequestHeader"
+            },
+            "required": true
+          },
+          "responses": [
+            {
+              "status": "200",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "OrderCollectiveOrderResponse"
+              },
+              "description": "OK; Collective order has been booked / scheduled correctly"
+            },
+            {
+              "status": "400",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Bad Request; Validation failed; missing parameters, wrong format, price mismatch, wrong project id, non-supported currency"
+            },
+            {
+              "status": "401",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Unauthorized; Authentication failed"
+            },
+            {
+              "status": "403",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Forbidden; Authentication correct but permissions missing"
+            },
+            {
+              "status": "422",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Unprocessable Entity; this order has been booked / scheduled already"
+            },
+            {
+              "status": "500",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Internal Server Error; Unexpected internal error"
+            }
+          ],
+          "success": [
+            "200"
+          ]
+        },
+        {
+          "name": "getOrderV2CollectiveOrderByCollectiveOrderId",
+          "operationId": "getOrderV2CollectiveOrderByCollectiveOrderId",
+          "method": "GET",
+          "path": "/order/v2/collectiveOrder/{collectiveOrderId}",
+          "summary": "Returns the existing collective offset order {orderId}",
+          "parameters": {
+            "path": {
+              "declaration": "GetOrderV2CollectiveOrderByCollectiveOrderIdPathParameter",
+              "required": true,
+              "parameters": [
+                {
+                  "name": "collectiveOrderId",
+                  "required": true,
+                  "type": {
+                    "kind": "string",
+                    "constraints": {}
+                  },
+                  "style": "simple",
+                  "explode": false
+                }
+              ]
+            }
+          },
+          "responses": [
+            {
+              "status": "200",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "OrderCollectiveOrderResponse"
+              },
+              "description": "OK"
+            },
+            {
+              "status": "400",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Bad Request; Validation failed / wrong parameter format"
+            },
+            {
+              "status": "401",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Unauthorized"
+            },
+            {
+              "status": "403",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Forbidden"
+            },
+            {
+              "status": "404",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Not Found; Order with this id has not been booked / scheduled before"
+            },
+            {
+              "status": "500",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Internal Server Error"
+            }
+          ],
+          "success": [
+            "200"
+          ]
+        },
+        {
+          "name": "postOrderV2SubOrderByCollectiveOrderId",
+          "operationId": "postOrderV2SubOrderByCollectiveOrderId",
+          "method": "POST",
+          "path": "/order/v2/subOrder/{collectiveOrderId}",
+          "summary": "Creates a suborder order within the collective order {orderId}",
+          "parameters": {
+            "path": {
+              "declaration": "PostOrderV2SubOrderByCollectiveOrderIdPathParameter",
+              "required": true,
+              "parameters": [
+                {
+                  "name": "collectiveOrderId",
+                  "required": true,
+                  "type": {
+                    "kind": "string",
+                    "constraints": {}
+                  },
+                  "style": "simple",
+                  "explode": false
+                }
+              ]
+            }
+          },
+          "requestBody": {
+            "contentType": "application/json",
+            "stream": false,
+            "type": {
+              "kind": "ref",
+              "name": "OrderRequest"
+            },
+            "required": true
+          },
+          "responses": [
+            {
+              "status": "200",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "OrderSubOrderResponse"
+              },
+              "description": "OK; suborder has been booked / scheduled correctly"
+            },
+            {
+              "status": "400",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Bad Request; Validation failed; missing parameters, wrong format, price mismatch, wrong project id, non-supported currency"
+            },
+            {
+              "status": "401",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Unauthorized; Authentication failed"
+            },
+            {
+              "status": "403",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Forbidden; Authentication correct but permissions missing"
+            },
+            {
+              "status": "422",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Unprocessable Entity; this order has been booked or scheduled already or orderId does not reference a collective order"
+            },
+            {
+              "status": "500",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Internal Server Error; Unexpected internal error"
+            }
+          ],
+          "success": [
+            "200"
+          ]
+        },
+        {
+          "name": "getOrderV2SubOrderByOrderId",
+          "operationId": "getOrderV2SubOrderByOrderId",
+          "method": "GET",
+          "path": "/order/v2/subOrder/{orderId}",
+          "summary": "Returns the existing suborder {orderId}",
+          "parameters": {
+            "path": {
+              "declaration": "GetOrderV2SubOrderByOrderIdPathParameter",
+              "required": true,
+              "parameters": [
+                {
+                  "name": "orderId",
+                  "required": true,
+                  "type": {
+                    "kind": "string",
+                    "constraints": {}
+                  },
+                  "style": "simple",
+                  "explode": false
+                }
+              ]
+            }
+          },
+          "responses": [
+            {
+              "status": "200",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "OrderSubOrderResponse"
+              },
+              "description": "OK"
+            },
+            {
+              "status": "400",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Bad Request; Validation failed / wrong parameter format"
+            },
+            {
+              "status": "401",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Unauthorized"
+            },
+            {
+              "status": "403",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Forbidden"
+            },
+            {
+              "status": "404",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Not Found; Order with this id has not been booked / scheduled before"
+            },
+            {
+              "status": "500",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Internal Server Error"
+            }
+          ],
+          "success": [
+            "200"
+          ]
+        },
+        {
+          "name": "deleteOrderV2SubOrderByOrderId",
+          "operationId": "deleteOrderV2SubOrderByOrderId",
+          "method": "DELETE",
+          "path": "/order/v2/subOrder/{orderId}",
+          "summary": "Cancels (and refunds; depending on payment) the existing suborder {orderId}",
+          "parameters": {
+            "path": {
+              "declaration": "DeleteOrderV2SubOrderByOrderIdPathParameter",
+              "required": true,
+              "parameters": [
+                {
+                  "name": "orderId",
+                  "required": true,
+                  "type": {
+                    "kind": "string",
+                    "constraints": {}
+                  },
+                  "style": "simple",
+                  "explode": false
+                }
+              ]
+            }
+          },
+          "responses": [
+            {
+              "status": "200",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "OrderSubOrderResponse"
+              },
+              "description": "OK. Suborder has been successfully cancelled."
+            },
+            {
+              "status": "400",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Bad Request; Validation failed / wrong parameter format"
+            },
+            {
+              "status": "401",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Unauthorized"
+            },
+            {
+              "status": "403",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Forbidden"
+            },
+            {
+              "status": "404",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Not Found; Order with this id has not been booked / scheduled before"
+            },
+            {
+              "status": "500",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Internal Server Error"
+            }
+          ],
+          "success": [
+            "200"
+          ]
+        },
+        {
+          "name": "patchOrderV2SubOrderByOrderId",
+          "operationId": "patchOrderV2SubOrderByOrderId",
+          "method": "PATCH",
+          "path": "/order/v2/subOrder/{orderId}",
+          "summary": "Updates an existing order {orderId}",
+          "parameters": {
+            "path": {
+              "declaration": "PatchOrderV2SubOrderByOrderIdPathParameter",
+              "required": true,
+              "parameters": [
+                {
+                  "name": "orderId",
+                  "required": true,
+                  "type": {
+                    "kind": "ref",
+                    "name": "OrderInfoRequest"
+                  },
+                  "style": "simple",
+                  "explode": false
+                }
+              ]
+            }
+          },
+          "responses": [
+            {
+              "status": "200",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "OrderSubOrderResponse"
+              },
+              "description": "OK"
+            },
+            {
+              "status": "400",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Bad Request; Validation failed / wrong parameter format"
+            },
+            {
+              "status": "401",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Unauthorized"
+            },
+            {
+              "status": "403",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Forbidden. Change is not possible."
+            },
+            {
+              "status": "404",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Not Found; Order with this id has not been booked / scheduled before"
+            },
+            {
+              "status": "500",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Internal Server Error"
+            }
+          ],
+          "success": [
+            "200"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "AvailabilityPriceCheckEmissionsService",
+      "folder": "availability-price-check-emissions",
+      "description": "Offset management service",
+      "operations": [
+        {
+          "name": "postOrderV2CheckOrder",
+          "operationId": "postOrderV2CheckOrder",
+          "method": "POST",
+          "path": "/order/v2/checkOrder",
+          "summary": "Checks availability and pricing of a requested quantity of emissions (in kg) in the given carbon offset project. Returns respective price if successful. Only valid for alimited period of time (minutes).",
+          "parameters": {},
+          "requestBody": {
+            "contentType": "application/json",
+            "stream": false,
+            "type": {
+              "kind": "ref",
+              "name": "OrderCheckRequest"
+            },
+            "required": true
+          },
+          "responses": [
+            {
+              "status": "200",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "OrderCheckResponse"
+              },
+              "description": "OK; requested quantity is available in carbon offset project"
+            },
+            {
+              "status": "400",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Bad Request; Validation failed; missing parameters, wrong format, price mismatch, wrong project id, non-supported currency"
+            },
+            {
+              "status": "401",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Unauthorized; Authentication failed"
+            },
+            {
+              "status": "403",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Forbidden; Authentication correct but permissions missing"
+            },
+            {
+              "status": "422",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Unprocessable Entity"
+            },
+            {
+              "status": "500",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Internal Server Error; Unexpected internal error"
+            }
+          ],
+          "success": [
+            "200"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CarbonOffsetProjectsService",
+      "folder": "carbon-offset-projects",
+      "description": "Offset management service",
+      "operations": [
+        {
+          "name": "getOffsetV2Projects",
+          "operationId": "getOffsetV2Projects",
+          "method": "GET",
+          "path": "/offset/v2/projects",
+          "summary": "Returns a list of carbon offset projects assigned to the account of the requesting credentials",
+          "parameters": {},
+          "responses": [
+            {
+              "status": "200",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "ProjectInfoResponseList"
+              },
+              "description": "OK"
+            },
+            {
+              "status": "400",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Bad Request; Validation failed / wrong parameter format"
+            },
+            {
+              "status": "401",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Unauthorized"
+            },
+            {
+              "status": "403",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Forbidden"
+            },
+            {
+              "status": "404",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Not Found; No projects assigned to this account"
+            },
+            {
+              "status": "500",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Internal Server Error"
+            }
+          ],
+          "success": [
+            "200"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "HealthcheckService",
+      "folder": "healthcheck-service",
+      "description": "Check for the availability of the API and its functionality",
+      "operations": [
+        {
+          "name": "getHealthcheckV1Healthcheck",
+          "operationId": "getHealthcheckV1Healthcheck",
+          "method": "GET",
+          "path": "/healthcheck/v1/healthcheck",
+          "summary": "Healthcheck!",
+          "parameters": {},
+          "responses": [
+            {
+              "status": "200",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "OK; Unified API available and functional"
+            },
+            {
+              "status": "500",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Internal Server Error; Unexpected internal error"
+            }
+          ],
+          "success": [
+            "200"
+          ]
+        }
+      ]
+    }
+  ],
+  "hooks": {},
+  "warnings": []
+}

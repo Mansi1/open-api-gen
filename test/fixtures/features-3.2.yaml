@@ -1,0 +1,79 @@
+openapi: 3.2.0
+info:
+  title: Features 3.2
+  version: 1.0.0
+tags:
+  - name: search
+paths:
+  /search:
+    query:
+      operationId: searchItems
+      tags: [search]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text: { type: string }
+      responses:
+        '200':
+          description: matches
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Item' }
+  /items:
+    get:
+      operationId: listItems
+      tags: [search]
+      parameters:
+        - name: filter
+          in: querystring
+          content:
+            application/x-www-form-urlencoded:
+              schema:
+                type: object
+                properties:
+                  owner: { type: string }
+                  page: { type: integer }
+      responses:
+        '200':
+          description: items
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Item' }
+  /items/stream:
+    get:
+      operationId: streamItems
+      tags: [search]
+      responses:
+        '200':
+          description: one item per line
+          content:
+            application/jsonl:
+              itemSchema: { $ref: '#/components/schemas/Item' }
+  /items/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    additionalOperations:
+      PURGE:
+        operationId: purgeItem
+        tags: [search]
+        responses:
+          '204':
+            description: purged
+components:
+  schemas:
+    Item:
+      type: object
+      required: [id]
+      properties:
+        id: { type: string }
+        updated_at: { type: string, format: date-time }

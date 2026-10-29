@@ -1,0 +1,1039 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "definitions": {
+    "Codec": {
+      "anyOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "date-time",
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "date",
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "bigint",
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "hook": {
+              "type": "string"
+            },
+            "kind": {
+              "const": "hook",
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "hook"
+          ],
+          "type": "object"
+        }
+      ],
+      "description": "How a value changes between wire and App shape when a client enables `transform`."
+    },
+    "Constraints": {
+      "additionalProperties": false,
+      "description": "JSON Schema constraints the validators check; names match JSON Schema 2020-12 (3.0 forms are normalized).",
+      "properties": {
+        "exclusiveMaximum": {
+          "type": "number"
+        },
+        "exclusiveMinimum": {
+          "type": "number"
+        },
+        "format": {
+          "type": "string"
+        },
+        "maxItems": {
+          "type": "number"
+        },
+        "maxLength": {
+          "type": "number"
+        },
+        "maxProperties": {
+          "type": "number"
+        },
+        "maximum": {
+          "type": "number"
+        },
+        "minItems": {
+          "type": "number"
+        },
+        "minLength": {
+          "type": "number"
+        },
+        "minProperties": {
+          "type": "number"
+        },
+        "minimum": {
+          "type": "number"
+        },
+        "multipleOf": {
+          "type": "number"
+        },
+        "pattern": {
+          "type": "string"
+        },
+        "uniqueItems": {
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "Declaration": {
+      "additionalProperties": false,
+      "properties": {
+        "deprecated": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/definitions/DeclarationKind",
+          "description": "Folder under `interface/`."
+        },
+        "name": {
+          "description": "Final TypeScript identifier, unique across all declarations.",
+          "type": "string"
+        },
+        "pointer": {
+          "description": "JSON Pointer of `source` in the OpenAPI document.",
+          "type": "string"
+        },
+        "runtime": {
+          "description": "True WHEN a request or response reaches this declaration, so validators and codecs are emitted for it.",
+          "type": "boolean"
+        },
+        "source": {
+          "description": "Original schema JSON, embedded in the doc comment as dist3 does."
+        },
+        "transformed": {
+          "description": "True WHEN the App type differs from the wire type (a codec or rename here or in any referenced declaration).",
+          "type": "boolean"
+        },
+        "type": {
+          "$ref": "#/definitions/TypeNode"
+        }
+      },
+      "required": [
+        "name",
+        "kind",
+        "source",
+        "pointer",
+        "type",
+        "transformed",
+        "runtime"
+      ],
+      "type": "object"
+    },
+    "DeclarationKind": {
+      "enum": [
+        "components",
+        "request",
+        "response",
+        "parameter"
+      ],
+      "type": "string"
+    },
+    "Diagnostic": {
+      "additionalProperties": false,
+      "description": "A problem found in the input; `pointer` is a JSON Pointer into the OpenAPI document.",
+      "properties": {
+        "message": {
+          "type": "string"
+        },
+        "pointer": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "pointer",
+        "message"
+      ],
+      "type": "object"
+    },
+    "Discriminator": {
+      "additionalProperties": false,
+      "description": "`mapping` goes from discriminator value to declaration name.",
+      "properties": {
+        "mapping": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "property": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "property",
+        "mapping"
+      ],
+      "type": "object"
+    },
+    "Hook": {
+      "additionalProperties": false,
+      "properties": {
+        "decode": {
+          "type": "string"
+        },
+        "encode": {
+          "type": "string"
+        },
+        "import": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "import",
+        "decode",
+        "encode"
+      ],
+      "type": "object"
+    },
+    "HttpMethod": {
+      "type": "string"
+    },
+    "Operation": {
+      "additionalProperties": false,
+      "properties": {
+        "deprecated": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string"
+        },
+        "method": {
+          "$ref": "#/definitions/HttpMethod",
+          "description": "Upper case, e.g. `GET`, `QUERY`, or a 3.2 `additionalOperations` method."
+        },
+        "name": {
+          "description": "Method name on the service, camelCase.",
+          "type": "string"
+        },
+        "operationId": {
+          "type": "string"
+        },
+        "parameters": {
+          "additionalProperties": false,
+          "properties": {
+            "cookie": {
+              "$ref": "#/definitions/ParameterGroup"
+            },
+            "header": {
+              "$ref": "#/definitions/ParameterGroup"
+            },
+            "path": {
+              "$ref": "#/definitions/ParameterGroup"
+            },
+            "query": {
+              "$ref": "#/definitions/ParameterGroup"
+            }
+          },
+          "type": "object"
+        },
+        "path": {
+          "description": "Templated path as in the document, e.g. `/pets/{petId}`.",
+          "type": "string"
+        },
+        "querystring": {
+          "additionalProperties": false,
+          "description": "OpenAPI 3.2 `in: querystring`: the whole query string as one value.",
+          "properties": {
+            "contentType": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "type": {
+              "$ref": "#/definitions/TypeNode"
+            }
+          },
+          "required": [
+            "name",
+            "contentType",
+            "type",
+            "required"
+          ],
+          "type": "object"
+        },
+        "requestBody": {
+          "additionalProperties": false,
+          "properties": {
+            "contentType": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "stream": {
+              "description": "OpenAPI 3.2 `itemSchema`: the body is a sequence of items (JSON Lines, SSE, ...), `type` is one item.",
+              "type": "boolean"
+            },
+            "type": {
+              "$ref": "#/definitions/TypeNode",
+              "description": "Omitted WHEN the media type has no schema."
+            }
+          },
+          "required": [
+            "contentType",
+            "required",
+            "stream"
+          ],
+          "type": "object"
+        },
+        "responses": {
+          "description": "Sorted by status; `default` last.",
+          "items": {
+            "$ref": "#/definitions/Response"
+          },
+          "type": "array"
+        },
+        "success": {
+          "description": "Status codes that count as success (2xx, or `default` when there is no 2xx).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "summary": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "operationId",
+        "method",
+        "path",
+        "parameters",
+        "responses",
+        "success"
+      ],
+      "type": "object"
+    },
+    "Parameter": {
+      "additionalProperties": false,
+      "description": "Parameters keep their wire names and wire types: transforms apply to bodies only.",
+      "properties": {
+        "deprecated": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string"
+        },
+        "explode": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "style": {
+          "enum": [
+            "form",
+            "simple",
+            "deepObject",
+            "spaceDelimited",
+            "pipeDelimited",
+            "label",
+            "matrix"
+          ],
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/definitions/TypeNode"
+        }
+      },
+      "required": [
+        "name",
+        "required",
+        "type",
+        "style",
+        "explode"
+      ],
+      "type": "object"
+    },
+    "ParameterGroup": {
+      "additionalProperties": false,
+      "properties": {
+        "declaration": {
+          "description": "Interface name, e.g. `GetPetPathParameter`.",
+          "type": "string"
+        },
+        "parameters": {
+          "items": {
+            "$ref": "#/definitions/Parameter"
+          },
+          "type": "array"
+        },
+        "required": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "declaration",
+        "required",
+        "parameters"
+      ],
+      "type": "object"
+    },
+    "Property": {
+      "additionalProperties": false,
+      "properties": {
+        "appName": {
+          "description": "Name in App types; differs from `name` only under a naming transform.",
+          "type": "string"
+        },
+        "deprecated": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string"
+        },
+        "name": {
+          "description": "Name on the wire.",
+          "type": "string"
+        },
+        "readOnly": {
+          "type": "boolean"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "type": {
+          "$ref": "#/definitions/TypeNode"
+        },
+        "writeOnly": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "appName",
+        "required",
+        "type"
+      ],
+      "type": "object"
+    },
+    "Response": {
+      "additionalProperties": false,
+      "properties": {
+        "contentType": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "stream": {
+          "description": "OpenAPI 3.2 `itemSchema`: the body is a sequence of items (JSON Lines, SSE, ...), `type` is one item.",
+          "type": "boolean"
+        },
+        "type": {
+          "$ref": "#/definitions/TypeNode",
+          "description": "Omitted WHEN the media type has no schema."
+        }
+      },
+      "required": [
+        "contentType",
+        "status",
+        "stream"
+      ],
+      "type": "object"
+    },
+    "Scalar": {
+      "type": [
+        "string",
+        "number",
+        "boolean",
+        "null"
+      ]
+    },
+    "Service": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "folder": {
+          "description": "Folder under `service/`.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Class name, e.g. `PetsService`.",
+          "type": "string"
+        },
+        "operations": {
+          "items": {
+            "$ref": "#/definitions/Operation"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "name",
+        "folder",
+        "operations"
+      ],
+      "type": "object"
+    },
+    "TypeNode": {
+      "anyOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "codec": {
+              "$ref": "#/definitions/Codec"
+            },
+            "deprecated": {
+              "type": "boolean"
+            },
+            "description": {
+              "type": "string"
+            },
+            "kind": {
+              "const": "ref",
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "name"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "codec": {
+              "$ref": "#/definitions/Codec"
+            },
+            "constraints": {
+              "$ref": "#/definitions/Constraints"
+            },
+            "deprecated": {
+              "type": "boolean"
+            },
+            "description": {
+              "type": "string"
+            },
+            "kind": {
+              "const": "string",
+              "type": "string"
+            }
+          },
+          "required": [
+            "constraints",
+            "kind"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "codec": {
+              "$ref": "#/definitions/Codec"
+            },
+            "constraints": {
+              "$ref": "#/definitions/Constraints"
+            },
+            "deprecated": {
+              "type": "boolean"
+            },
+            "description": {
+              "type": "string"
+            },
+            "integer": {
+              "type": "boolean"
+            },
+            "kind": {
+              "const": "number",
+              "type": "string"
+            }
+          },
+          "required": [
+            "constraints",
+            "integer",
+            "kind"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "codec": {
+              "$ref": "#/definitions/Codec"
+            },
+            "deprecated": {
+              "type": "boolean"
+            },
+            "description": {
+              "type": "string"
+            },
+            "kind": {
+              "const": "boolean",
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "codec": {
+              "$ref": "#/definitions/Codec"
+            },
+            "deprecated": {
+              "type": "boolean"
+            },
+            "description": {
+              "type": "string"
+            },
+            "kind": {
+              "const": "null",
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "codec": {
+              "$ref": "#/definitions/Codec"
+            },
+            "deprecated": {
+              "type": "boolean"
+            },
+            "description": {
+              "type": "string"
+            },
+            "kind": {
+              "const": "binary",
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "codec": {
+              "$ref": "#/definitions/Codec"
+            },
+            "deprecated": {
+              "type": "boolean"
+            },
+            "description": {
+              "type": "string"
+            },
+            "kind": {
+              "const": "literal",
+              "type": "string"
+            },
+            "value": {
+              "$ref": "#/definitions/Scalar"
+            }
+          },
+          "required": [
+            "kind",
+            "value"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "codec": {
+              "$ref": "#/definitions/Codec"
+            },
+            "deprecated": {
+              "type": "boolean"
+            },
+            "description": {
+              "type": "string"
+            },
+            "kind": {
+              "const": "enum",
+              "type": "string"
+            },
+            "values": {
+              "items": {
+                "$ref": "#/definitions/Scalar"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "kind",
+            "values"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "codec": {
+              "$ref": "#/definitions/Codec"
+            },
+            "constraints": {
+              "$ref": "#/definitions/Constraints"
+            },
+            "deprecated": {
+              "type": "boolean"
+            },
+            "description": {
+              "type": "string"
+            },
+            "items": {
+              "$ref": "#/definitions/TypeNode"
+            },
+            "kind": {
+              "const": "array",
+              "type": "string"
+            }
+          },
+          "required": [
+            "constraints",
+            "items",
+            "kind"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "codec": {
+              "$ref": "#/definitions/Codec"
+            },
+            "constraints": {
+              "$ref": "#/definitions/Constraints"
+            },
+            "deprecated": {
+              "type": "boolean"
+            },
+            "description": {
+              "type": "string"
+            },
+            "kind": {
+              "const": "tuple",
+              "type": "string"
+            },
+            "prefix": {
+              "items": {
+                "$ref": "#/definitions/TypeNode"
+              },
+              "type": "array"
+            },
+            "rest": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/TypeNode"
+                },
+                {
+                  "const": false,
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "constraints",
+            "kind",
+            "prefix",
+            "rest"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "additional": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/TypeNode"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "codec": {
+              "$ref": "#/definitions/Codec"
+            },
+            "constraints": {
+              "$ref": "#/definitions/Constraints"
+            },
+            "deprecated": {
+              "type": "boolean"
+            },
+            "description": {
+              "type": "string"
+            },
+            "kind": {
+              "const": "object",
+              "type": "string"
+            },
+            "properties": {
+              "items": {
+                "$ref": "#/definitions/Property"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "additional",
+            "constraints",
+            "kind",
+            "properties"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "codec": {
+              "$ref": "#/definitions/Codec"
+            },
+            "deprecated": {
+              "type": "boolean"
+            },
+            "description": {
+              "type": "string"
+            },
+            "discriminator": {
+              "$ref": "#/definitions/Discriminator"
+            },
+            "kind": {
+              "const": "union",
+              "type": "string"
+            },
+            "members": {
+              "items": {
+                "$ref": "#/definitions/TypeNode"
+              },
+              "type": "array"
+            },
+            "mode": {
+              "enum": [
+                "oneOf",
+                "anyOf"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "members",
+            "mode"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "codec": {
+              "$ref": "#/definitions/Codec"
+            },
+            "deprecated": {
+              "type": "boolean"
+            },
+            "description": {
+              "type": "string"
+            },
+            "kind": {
+              "const": "intersection",
+              "type": "string"
+            },
+            "members": {
+              "items": {
+                "$ref": "#/definitions/TypeNode"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "kind",
+            "members"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "codec": {
+              "$ref": "#/definitions/Codec"
+            },
+            "deprecated": {
+              "type": "boolean"
+            },
+            "description": {
+              "type": "string"
+            },
+            "kind": {
+              "const": "unknown",
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "codec": {
+              "$ref": "#/definitions/Codec"
+            },
+            "deprecated": {
+              "type": "boolean"
+            },
+            "description": {
+              "type": "string"
+            },
+            "kind": {
+              "const": "never",
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "type": "object"
+        }
+      ]
+    }
+  },
+  "description": "The internal format joining the two stages. Stage 1 (src/intermediate-format) builds it from an OpenAPI document, Stage 2 (src/emit) turns it into files without ever seeing the document, its version or the config.\n\nRules: plain JSON data only (no functions, classes, Maps or cycles; references are by name), and every decision is already made here, so Stage 2 only formats. Bump `intermediateFormatVersion` on any incompatible change.",
+  "properties": {
+    "declarations": {
+      "description": "Every named type; Stage 2 writes one file per declaration.",
+      "items": {
+        "$ref": "#/definitions/Declaration"
+      },
+      "type": "array"
+    },
+    "hooks": {
+      "additionalProperties": {
+        "$ref": "#/definitions/Hook"
+      },
+      "description": "Transformers from the config, keyed `format:<name>` | `schema:<Name>`; referenced by `Codec.hook`.",
+      "type": "object"
+    },
+    "intermediateFormatVersion": {
+      "const": 1,
+      "type": "number"
+    },
+    "services": {
+      "items": {
+        "$ref": "#/definitions/Service"
+      },
+      "type": "array"
+    },
+    "source": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "openapi": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "openapi",
+        "title",
+        "version"
+      ],
+      "type": "object"
+    },
+    "warnings": {
+      "items": {
+        "$ref": "#/definitions/Diagnostic"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "intermediateFormatVersion",
+    "source",
+    "declarations",
+    "services",
+    "hooks",
+    "warnings"
+  ],
+  "type": "object"
+}
+

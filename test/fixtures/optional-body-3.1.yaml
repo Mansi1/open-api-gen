@@ -1,0 +1,25 @@
+openapi: 3.1.2
+info:
+  title: A success response with a body and one without
+  version: 1.0.0
+tags:
+  - name: jobs
+paths:
+  /jobs/{id}:
+    get:
+      operationId: getJob
+      tags: [jobs]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: The finished job
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [finished_at]
+                properties:
+                  finished_at: { type: string, format: date-time }
+        '204':
+          description: The job is still running

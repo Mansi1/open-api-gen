@@ -1,0 +1,14 @@
+openapi: 3.1.2
+info:
+  title: Invalid 3.1
+  version: 1.0.0
+paths:
+  /broken:
+    get:
+      responses:
+        '200':
+          description: schema type is not a valid JSON Schema type
+          content:
+            application/json:
+              schema:
+                type: 42

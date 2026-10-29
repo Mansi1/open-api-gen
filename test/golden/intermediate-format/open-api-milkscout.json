@@ -1,0 +1,29 @@
+{
+  "declarations": 277,
+  "byKind": {
+    "components": 148,
+    "request": 4,
+    "response": 0,
+    "parameter": 125
+  },
+  "services": [
+    "CompanyService:22",
+    "MessageSettingService:5",
+    "PurchaseRequestService:6",
+    "StatisticsService:1",
+    "MilkAgreementService:9",
+    "StorageService:12",
+    "InvoiceService:4",
+    "MilkAlarmService:3",
+    "GeneralService:9",
+    "OfferService:14",
+    "ShippingOfferService:11",
+    "AuthService:3",
+    "AdminService:17",
+    "MessageService:2",
+    "AccountService:9"
+  ],
+  "transformed": 56,
+  "runtime": 137,
+  "warnings": []
+}

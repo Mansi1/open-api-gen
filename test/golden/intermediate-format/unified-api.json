@@ -1,0 +1,1508 @@
+{
+  "intermediateFormatVersion": 1,
+  "source": {
+    "path": "examples/unified-api.yaml",
+    "openapi": "3.0.1",
+    "title": "Offset API",
+    "version": "1.0"
+  },
+  "declarations": [
+    {
+      "name": "StatusResponse",
+      "kind": "components",
+      "source": {
+        "title": "StatusResponse",
+        "required": [
+          "type",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Can be \"SUCCESS\" or \"ERROR\""
+          },
+          "message": {
+            "type": "string",
+            "description": "Lengthly status message explaining the error"
+          }
+        }
+      },
+      "pointer": "/components/schemas/StatusResponse",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "message",
+            "appName": "message",
+            "required": true,
+            "type": {
+              "kind": "string",
+              "constraints": {}
+            },
+            "description": "Lengthly status message explaining the error"
+          },
+          {
+            "name": "type",
+            "appName": "type",
+            "required": true,
+            "type": {
+              "kind": "string",
+              "constraints": {}
+            },
+            "description": "Can be \"SUCCESS\" or \"ERROR\""
+          }
+        ],
+        "additional": true,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": true
+    },
+    {
+      "name": "ContactInfoRequest",
+      "kind": "components",
+      "source": {
+        "title": "ContactInfoRequest",
+        "required": [
+          "firstName",
+          "lastName",
+          "email",
+          "addressLine1",
+          "city",
+          "zipCode",
+          "country",
+          "language"
+        ],
+        "type": "object",
+        "properties": {
+          "companyName": {
+            "type": "string",
+            "maxLength": 255,
+            "description": "Company name in B2B2C case/business"
+          },
+          "firstName": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "lastName": {
+            "type": "string",
+            "maxLength": 255,
+            "description": "In case of middle name etc. this is the field to concatenate"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 255,
+            "description": "Email alias"
+          },
+          "addressLine1": {
+            "type": "string",
+            "maxLength": 255,
+            "description": "Street name and house number, apartment number"
+          },
+          "city": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "zipCode": {
+            "type": "string",
+            "maxLength": 255,
+            "description": "Can be arbitrary formatted to support diverse countries"
+          },
+          "country": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 2,
+            "pattern": "^[A-Z]{2}$",
+            "description": "ISO 3166-1 alpha-2, e.g. DE, EN"
+          },
+          "language": {
+            "$ref": "#/components/schemas/Language"
+          }
+        }
+      },
+      "pointer": "/components/schemas/ContactInfoRequest",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "addressLine1",
+            "appName": "addressLine1",
+            "required": true,
+            "type": {
+              "kind": "string",
+              "constraints": {
+                "maxLength": 255
+              }
+            },
+            "description": "Street name and house number, apartment number"
+          },
+          {
+            "name": "city",
+            "appName": "city",
+            "required": true,
+            "type": {
+              "kind": "string",
+              "constraints": {
+                "maxLength": 255
+              }
+            }
+          },
+          {
+            "name": "companyName",
+            "appName": "companyName",
+            "required": false,
+            "type": {
+              "kind": "string",
+              "constraints": {
+                "maxLength": 255
+              }
+            },
+            "description": "Company name in B2B2C case/business"
+          },
+          {
+            "name": "country",
+            "appName": "country",
+            "required": true,
+            "type": {
+              "kind": "string",
+              "constraints": {
+                "minLength": 2,
+                "maxLength": 2,
+                "pattern": "^[A-Z]{2}$"
+              }
+            },
+            "description": "ISO 3166-1 alpha-2, e.g. DE, EN"
+          },
+          {
+            "name": "email",
+            "appName": "email",
+            "required": true,
+            "type": {
+              "kind": "string",
+              "constraints": {
+                "maxLength": 255,
+                "format": "email"
+              }
+            },
+            "description": "Email alias"
+          },
+          {
+            "name": "firstName",
+            "appName": "firstName",
+            "required": true,
+            "type": {
+              "kind": "string",
+              "constraints": {
+                "maxLength": 255
+              }
+            }
+          },
+          {
+            "name": "language",
+            "appName": "language",
+            "required": true,
+            "type": {
+              "kind": "ref",
+              "name": "Language"
+            }
+          },
+          {
+            "name": "lastName",
+            "appName": "lastName",
+            "required": true,
+            "type": {
+              "kind": "string",
+              "constraints": {
+                "maxLength": 255
+              }
+            },
+            "description": "In case of middle name etc. this is the field to concatenate"
+          },
+          {
+            "name": "zipCode",
+            "appName": "zipCode",
+            "required": true,
+            "type": {
+              "kind": "string",
+              "constraints": {
+                "maxLength": 255
+              }
+            },
+            "description": "Can be arbitrary formatted to support diverse countries"
+          }
+        ],
+        "additional": true,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": true
+    },
+    {
+      "name": "OffsetInfoRequest",
+      "kind": "components",
+      "source": {
+        "title": "OffsetInfoRequest",
+        "type": "object",
+        "required": [
+          "projectNumber",
+          "emissionsInKg",
+          "description1",
+          "description2"
+        ],
+        "properties": {
+          "projectNumber": {
+            "type": "integer",
+            "minLength": 4,
+            "description": "FPM project number, e.g. 1345"
+          },
+          "emissionsInKg": {
+            "type": "integer",
+            "description": "Non-fractional kg amount; e.g. 45677"
+          },
+          "description1": {
+            "type": "string",
+            "maxLength": 255,
+            "description": "Will be shown in the ID tracking page (e.g. customer name)"
+          },
+          "description2": {
+            "type": "string",
+            "maxLength": 255,
+            "description": "Will be shown in the ID tracking page (e.g. order description)"
+          },
+          "externalReference": {
+            "type": "string",
+            "maxLength": 128,
+            "description": "Used for the accounting reference"
+          }
+        }
+      },
+      "pointer": "/components/schemas/OffsetInfoRequest",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "description1",
+            "appName": "description1",
+            "required": true,
+            "type": {
+              "kind": "string",
+              "constraints": {
+                "maxLength": 255
+              }
+            },
+            "description": "Will be shown in the ID tracking page (e.g. customer name)"
+          },
+          {
+            "name": "description2",
+            "appName": "description2",
+            "required": true,
+            "type": {
+              "kind": "string",
+              "constraints": {
+                "maxLength": 255
+              }
+            },
+            "description": "Will be shown in the ID tracking page (e.g. order description)"
+          },
+          {
+            "name": "emissionsInKg",
+            "appName": "emissionsInKg",
+            "required": true,
+            "type": {
+              "kind": "number",
+              "integer": true,
+              "constraints": {}
+            },
+            "description": "Non-fractional kg amount; e.g. 45677"
+          },
+          {
+            "name": "externalReference",
+            "appName": "externalReference",
+            "required": false,
+            "type": {
+              "kind": "string",
+              "constraints": {
+                "maxLength": 128
+              }
+            },
+            "description": "Used for the accounting reference"
+          },
+          {
+            "name": "projectNumber",
+            "appName": "projectNumber",
+            "required": true,
+            "type": {
+              "kind": "number",
+              "integer": true,
+              "constraints": {
+                "minLength": 4
+              }
+            },
+            "description": "FPM project number, e.g. 1345"
+          }
+        ],
+        "additional": true,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": true
+    },
+    {
+      "name": "OffsetInfoResponse",
+      "kind": "components",
+      "source": {
+        "title": "OffsetInfoResponse",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/OffsetInfoRequest"
+          },
+          {
+            "type": "object",
+            "required": [
+              "status"
+            ],
+            "properties": {
+              "offsetId": {
+                "type": "string",
+                "description": "Primary identifier (unique id) to reference the offset on our side (UUIDv4); this one is to be used for cancellation too"
+              },
+              "cpid": {
+                "type": "string",
+                "description": "current offset cpid (raw 3-part identifier to be used for the tracking; see trackingUrl for the hashed/anonymous URL)"
+              },
+              "status": {
+                "type": "string",
+                "description": "Latest status of the offset in journal (e.g. ORDER_PENDING)"
+              },
+              "trackingUrl": {
+                "type": "string",
+                "description": "For tracking the offset"
+              }
+            }
+          }
+        ]
+      },
+      "pointer": "/components/schemas/OffsetInfoResponse",
+      "type": {
+        "kind": "intersection",
+        "members": [
+          {
+            "kind": "ref",
+            "name": "OffsetInfoRequest"
+          },
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "cpid",
+                "appName": "cpid",
+                "required": false,
+                "type": {
+                  "kind": "string",
+                  "constraints": {}
+                },
+                "description": "current offset cpid (raw 3-part identifier to be used for the tracking; see trackingUrl for the hashed/anonymous URL)"
+              },
+              {
+                "name": "offsetId",
+                "appName": "offsetId",
+                "required": false,
+                "type": {
+                  "kind": "string",
+                  "constraints": {}
+                },
+                "description": "Primary identifier (unique id) to reference the offset on our side (UUIDv4); this one is to be used for cancellation too"
+              },
+              {
+                "name": "status",
+                "appName": "status",
+                "required": true,
+                "type": {
+                  "kind": "string",
+                  "constraints": {}
+                },
+                "description": "Latest status of the offset in journal (e.g. ORDER_PENDING)"
+              },
+              {
+                "name": "trackingUrl",
+                "appName": "trackingUrl",
+                "required": false,
+                "type": {
+                  "kind": "string",
+                  "constraints": {}
+                },
+                "description": "For tracking the offset"
+              }
+            ],
+            "additional": true,
+            "constraints": {}
+          }
+        ]
+      },
+      "transformed": false,
+      "runtime": true
+    },
+    {
+      "name": "OffsetRequest",
+      "kind": "components",
+      "source": {
+        "title": "OffsetRequest",
+        "required": [
+          "offsetInfo",
+          "contactInfo"
+        ],
+        "type": "object",
+        "properties": {
+          "offsetInfo": {
+            "$ref": "#/components/schemas/OffsetInfoRequest"
+          },
+          "contactInfo": {
+            "$ref": "#/components/schemas/ContactInfoRequest"
+          }
+        }
+      },
+      "pointer": "/components/schemas/OffsetRequest",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "contactInfo",
+            "appName": "contactInfo",
+            "required": true,
+            "type": {
+              "kind": "ref",
+              "name": "ContactInfoRequest"
+            }
+          },
+          {
+            "name": "offsetInfo",
+            "appName": "offsetInfo",
+            "required": true,
+            "type": {
+              "kind": "ref",
+              "name": "OffsetInfoRequest"
+            }
+          }
+        ],
+        "additional": true,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": true
+    },
+    {
+      "name": "OffsetResponse",
+      "kind": "components",
+      "source": {
+        "title": "OffsetResponse",
+        "required": [
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/StatusResponse"
+          },
+          "result": {
+            "$ref": "#/components/schemas/OffsetInfoResponse"
+          }
+        }
+      },
+      "pointer": "/components/schemas/OffsetResponse",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "result",
+            "appName": "result",
+            "required": false,
+            "type": {
+              "kind": "ref",
+              "name": "OffsetInfoResponse"
+            }
+          },
+          {
+            "name": "status",
+            "appName": "status",
+            "required": true,
+            "type": {
+              "kind": "ref",
+              "name": "StatusResponse"
+            }
+          }
+        ],
+        "additional": true,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": true
+    },
+    {
+      "name": "PlaygroundResponse",
+      "kind": "components",
+      "source": {
+        "title": "PlaygroundResponse",
+        "type": "object",
+        "properties": {
+          "anyType": {
+            "$ref": "#/components/schemas/AnyType"
+          },
+          "numberType": {
+            "$ref": "#/components/schemas/NumberType"
+          },
+          "integerType": {
+            "$ref": "#/components/schemas/IntegerType"
+          },
+          "booleanType": {
+            "$ref": "#/components/schemas/BooleanType"
+          },
+          "primitiveAnyType": {},
+          "language": {
+            "$ref": "#/components/schemas/Language"
+          }
+        }
+      },
+      "pointer": "/components/schemas/PlaygroundResponse",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "anyType",
+            "appName": "anyType",
+            "required": false,
+            "type": {
+              "kind": "ref",
+              "name": "AnyType"
+            }
+          },
+          {
+            "name": "booleanType",
+            "appName": "booleanType",
+            "required": false,
+            "type": {
+              "kind": "ref",
+              "name": "BooleanType"
+            }
+          },
+          {
+            "name": "integerType",
+            "appName": "integerType",
+            "required": false,
+            "type": {
+              "kind": "ref",
+              "name": "IntegerType"
+            }
+          },
+          {
+            "name": "language",
+            "appName": "language",
+            "required": false,
+            "type": {
+              "kind": "ref",
+              "name": "Language"
+            }
+          },
+          {
+            "name": "numberType",
+            "appName": "numberType",
+            "required": false,
+            "type": {
+              "kind": "ref",
+              "name": "NumberType"
+            }
+          },
+          {
+            "name": "primitiveAnyType",
+            "appName": "primitiveAnyType",
+            "required": false,
+            "type": {
+              "kind": "unknown"
+            }
+          }
+        ],
+        "additional": true,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": true
+    },
+    {
+      "name": "AnyType",
+      "kind": "components",
+      "source": {},
+      "pointer": "/components/schemas/AnyType",
+      "type": {
+        "kind": "unknown"
+      },
+      "transformed": false,
+      "runtime": true
+    },
+    {
+      "name": "StringType",
+      "kind": "components",
+      "source": {
+        "type": "string"
+      },
+      "pointer": "/components/schemas/StringType",
+      "type": {
+        "kind": "string",
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": false
+    },
+    {
+      "name": "NumberType",
+      "kind": "components",
+      "source": {
+        "type": "number"
+      },
+      "pointer": "/components/schemas/NumberType",
+      "type": {
+        "kind": "number",
+        "integer": false,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": true
+    },
+    {
+      "name": "IntegerType",
+      "kind": "components",
+      "source": {
+        "type": "integer"
+      },
+      "pointer": "/components/schemas/IntegerType",
+      "type": {
+        "kind": "number",
+        "integer": true,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": true
+    },
+    {
+      "name": "BooleanType",
+      "kind": "components",
+      "source": {
+        "type": "boolean"
+      },
+      "pointer": "/components/schemas/BooleanType",
+      "type": {
+        "kind": "boolean"
+      },
+      "transformed": false,
+      "runtime": true
+    },
+    {
+      "name": "Language",
+      "kind": "components",
+      "source": {
+        "type": "string",
+        "maxLength": 2,
+        "description": "Language of the tracking",
+        "enum": [
+          "DE",
+          "EN"
+        ]
+      },
+      "pointer": "/components/schemas/Language",
+      "type": {
+        "kind": "enum",
+        "values": [
+          "DE",
+          "EN"
+        ]
+      },
+      "transformed": false,
+      "runtime": true,
+      "description": "Language of the tracking"
+    },
+    {
+      "name": "CreateOffsetHeaderParameter",
+      "kind": "parameter",
+      "source": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "X-Sdk-Version": {
+            "type": "string"
+          }
+        }
+      },
+      "pointer": "/paths/~1v1~1offset/post",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "X-Sdk-Version",
+            "appName": "X-Sdk-Version",
+            "required": false,
+            "type": {
+              "kind": "string",
+              "constraints": {}
+            },
+            "description": "SDK version header"
+          }
+        ],
+        "additional": false,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": false
+    },
+    {
+      "name": "GetOffsetPathParameter",
+      "kind": "parameter",
+      "source": {
+        "type": "object",
+        "required": [
+          "offsetId"
+        ],
+        "properties": {
+          "offsetId": {
+            "type": "string"
+          }
+        }
+      },
+      "pointer": "/paths/~1v1~1offset~1{offsetId}/get",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "offsetId",
+            "appName": "offsetId",
+            "required": true,
+            "type": {
+              "kind": "string",
+              "constraints": {}
+            }
+          }
+        ],
+        "additional": false,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": false
+    },
+    {
+      "name": "CancelOffsetPathParameter",
+      "kind": "parameter",
+      "source": {
+        "type": "object",
+        "required": [
+          "offsetId"
+        ],
+        "properties": {
+          "offsetId": {
+            "type": "string"
+          }
+        }
+      },
+      "pointer": "/paths/~1v1~1offset~1{offsetId}/delete",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "offsetId",
+            "appName": "offsetId",
+            "required": true,
+            "type": {
+              "kind": "string",
+              "constraints": {}
+            }
+          }
+        ],
+        "additional": false,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": false
+    },
+    {
+      "name": "PlayAroundHeaderParameter",
+      "kind": "parameter",
+      "source": {
+        "type": "object",
+        "required": [
+          "X-Sdk-Version",
+          "header_in_snake_case"
+        ],
+        "properties": {
+          "X-Sdk-Version": {
+            "type": "string"
+          },
+          "headerInCamelCase": {
+            "type": "string"
+          },
+          "header_in_snake_case": {
+            "type": "string"
+          },
+          "my-optional-header": {
+            "type": "string"
+          }
+        }
+      },
+      "pointer": "/paths/~1v1~1playground/get",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "X-Sdk-Version",
+            "appName": "X-Sdk-Version",
+            "required": true,
+            "type": {
+              "kind": "string",
+              "constraints": {}
+            },
+            "description": "SDK version header"
+          },
+          {
+            "name": "headerInCamelCase",
+            "appName": "headerInCamelCase",
+            "required": false,
+            "type": {
+              "kind": "string",
+              "constraints": {}
+            },
+            "description": "test"
+          },
+          {
+            "name": "header_in_snake_case",
+            "appName": "header_in_snake_case",
+            "required": true,
+            "type": {
+              "kind": "string",
+              "constraints": {}
+            },
+            "description": "test"
+          },
+          {
+            "name": "my-optional-header",
+            "appName": "my-optional-header",
+            "required": false,
+            "type": {
+              "kind": "string",
+              "constraints": {}
+            },
+            "description": "test"
+          }
+        ],
+        "additional": false,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": false
+    },
+    {
+      "name": "PlayAroundQueryParameter",
+      "kind": "parameter",
+      "source": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "queryParameter": {
+            "type": "string"
+          }
+        }
+      },
+      "pointer": "/paths/~1v1~1playground/get",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "queryParameter",
+            "appName": "queryParameter",
+            "required": false,
+            "type": {
+              "kind": "string",
+              "constraints": {}
+            },
+            "description": "test"
+          }
+        ],
+        "additional": false,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": false
+    },
+    {
+      "name": "PlayAroundPathParameter",
+      "kind": "parameter",
+      "source": {
+        "type": "object",
+        "required": [
+          "pathParameter"
+        ],
+        "properties": {
+          "pathParameter": {
+            "type": "string"
+          }
+        }
+      },
+      "pointer": "/paths/~1v1~1playground/get",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "pathParameter",
+            "appName": "pathParameter",
+            "required": true,
+            "type": {
+              "kind": "string",
+              "constraints": {}
+            },
+            "description": "test"
+          }
+        ],
+        "additional": false,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": false
+    },
+    {
+      "name": "PlayAroundCookieParameter",
+      "kind": "parameter",
+      "source": {
+        "type": "object",
+        "required": [
+          "cookieParameter"
+        ],
+        "properties": {
+          "cookieParameter": {
+            "type": "string"
+          }
+        }
+      },
+      "pointer": "/paths/~1v1~1playground/get",
+      "type": {
+        "kind": "object",
+        "properties": [
+          {
+            "name": "cookieParameter",
+            "appName": "cookieParameter",
+            "required": true,
+            "type": {
+              "kind": "string",
+              "constraints": {}
+            },
+            "description": "test"
+          }
+        ],
+        "additional": false,
+        "constraints": {}
+      },
+      "transformed": false,
+      "runtime": false
+    }
+  ],
+  "services": [
+    {
+      "name": "OffsetService",
+      "folder": "offset-service",
+      "description": "Offset management service",
+      "operations": [
+        {
+          "name": "createOffset",
+          "operationId": "createOffset",
+          "method": "POST",
+          "path": "/v1/offset",
+          "summary": "Creates a offset for scheduled processing",
+          "parameters": {
+            "header": {
+              "declaration": "CreateOffsetHeaderParameter",
+              "required": false,
+              "parameters": [
+                {
+                  "name": "X-Sdk-Version",
+                  "required": false,
+                  "type": {
+                    "kind": "string",
+                    "constraints": {}
+                  },
+                  "style": "simple",
+                  "explode": false,
+                  "description": "SDK version header"
+                }
+              ]
+            }
+          },
+          "requestBody": {
+            "contentType": "application/json",
+            "stream": false,
+            "type": {
+              "kind": "ref",
+              "name": "OffsetRequest"
+            },
+            "required": true
+          },
+          "responses": [
+            {
+              "status": "200",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "OffsetResponse"
+              },
+              "description": "OK; Offset has been scheduled correctly"
+            },
+            {
+              "status": "400",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Bad Request; Validation failed; missing parameters, wrong format, price mismatch, wrong project id, non-supported currency"
+            },
+            {
+              "status": "401",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Unauthorized; Authentication failed"
+            },
+            {
+              "status": "403",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Forbidden; Authentication corrent but permissions missing"
+            },
+            {
+              "status": "422",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Unprocessable Entity; this offset has been scheduled already"
+            },
+            {
+              "status": "500",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Internal Server Error; Unexpected internal error"
+            }
+          ],
+          "success": [
+            "200"
+          ]
+        },
+        {
+          "name": "getOffset",
+          "operationId": "getOffset",
+          "method": "GET",
+          "path": "/v1/offset/{offsetId}",
+          "summary": "Returns a offset",
+          "parameters": {
+            "path": {
+              "declaration": "GetOffsetPathParameter",
+              "required": true,
+              "parameters": [
+                {
+                  "name": "offsetId",
+                  "required": true,
+                  "type": {
+                    "kind": "string",
+                    "constraints": {}
+                  },
+                  "style": "simple",
+                  "explode": false
+                }
+              ]
+            }
+          },
+          "responses": [
+            {
+              "status": "200",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "OffsetResponse"
+              },
+              "description": "OK"
+            },
+            {
+              "status": "400",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Bad Request; Validation failed / wrong parameter format"
+            },
+            {
+              "status": "401",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Unauthorized"
+            },
+            {
+              "status": "403",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Forbidden"
+            },
+            {
+              "status": "404",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Not Found; Offset with this id has not been scheduled before"
+            },
+            {
+              "status": "500",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Internal Server Error"
+            }
+          ],
+          "success": [
+            "200"
+          ]
+        },
+        {
+          "name": "cancelOffset",
+          "operationId": "cancelOffset",
+          "method": "DELETE",
+          "path": "/v1/offset/{offsetId}",
+          "summary": "Cancels and refunds an existing offset",
+          "parameters": {
+            "path": {
+              "declaration": "CancelOffsetPathParameter",
+              "required": true,
+              "parameters": [
+                {
+                  "name": "offsetId",
+                  "required": true,
+                  "type": {
+                    "kind": "string",
+                    "constraints": {}
+                  },
+                  "style": "simple",
+                  "explode": false
+                }
+              ]
+            }
+          },
+          "responses": [
+            {
+              "status": "200",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "OffsetResponse"
+              },
+              "description": "OK"
+            },
+            {
+              "status": "400",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Bad Request; Validation failed / wrong parameter format"
+            },
+            {
+              "status": "401",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Unauthorized"
+            },
+            {
+              "status": "403",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Forbidden"
+            },
+            {
+              "status": "404",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Not Found; Offset with this id has not been scheduled before"
+            },
+            {
+              "status": "500",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Internal Server Error"
+            }
+          ],
+          "success": [
+            "200"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "HealthCheckService",
+      "folder": "health-check-service",
+      "description": "System health management service",
+      "operations": [
+        {
+          "name": "getHealth",
+          "operationId": "getHealth",
+          "method": "GET",
+          "path": "/v1/healthcheck",
+          "summary": "Used to check the system health of the API",
+          "parameters": {},
+          "responses": [
+            {
+              "status": "200",
+              "contentType": "",
+              "stream": false,
+              "description": "OK"
+            },
+            {
+              "status": "500",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "StatusResponse"
+              },
+              "description": "Internal Server Error"
+            }
+          ],
+          "success": [
+            "200"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "PlaygroundService",
+      "folder": "playground-service",
+      "operations": [
+        {
+          "name": "playAround",
+          "operationId": "playAround",
+          "method": "GET",
+          "path": "/v1/playground",
+          "summary": "Used to test st-open-api",
+          "parameters": {
+            "header": {
+              "declaration": "PlayAroundHeaderParameter",
+              "required": true,
+              "parameters": [
+                {
+                  "name": "X-Sdk-Version",
+                  "required": true,
+                  "type": {
+                    "kind": "string",
+                    "constraints": {}
+                  },
+                  "style": "simple",
+                  "explode": false,
+                  "description": "SDK version header"
+                },
+                {
+                  "name": "headerInCamelCase",
+                  "required": false,
+                  "type": {
+                    "kind": "string",
+                    "constraints": {}
+                  },
+                  "style": "simple",
+                  "explode": false,
+                  "description": "test"
+                },
+                {
+                  "name": "header_in_snake_case",
+                  "required": true,
+                  "type": {
+                    "kind": "string",
+                    "constraints": {}
+                  },
+                  "style": "simple",
+                  "explode": false,
+                  "description": "test"
+                },
+                {
+                  "name": "my-optional-header",
+                  "required": false,
+                  "type": {
+                    "kind": "string",
+                    "constraints": {}
+                  },
+                  "style": "simple",
+                  "explode": false,
+                  "description": "test"
+                }
+              ]
+            },
+            "query": {
+              "declaration": "PlayAroundQueryParameter",
+              "required": false,
+              "parameters": [
+                {
+                  "name": "queryParameter",
+                  "required": false,
+                  "type": {
+                    "kind": "string",
+                    "constraints": {}
+                  },
+                  "style": "form",
+                  "explode": true,
+                  "description": "test"
+                }
+              ]
+            },
+            "path": {
+              "declaration": "PlayAroundPathParameter",
+              "required": true,
+              "parameters": [
+                {
+                  "name": "pathParameter",
+                  "required": true,
+                  "type": {
+                    "kind": "string",
+                    "constraints": {}
+                  },
+                  "style": "simple",
+                  "explode": false,
+                  "description": "test"
+                }
+              ]
+            },
+            "cookie": {
+              "declaration": "PlayAroundCookieParameter",
+              "required": true,
+              "parameters": [
+                {
+                  "name": "cookieParameter",
+                  "required": true,
+                  "type": {
+                    "kind": "string",
+                    "constraints": {}
+                  },
+                  "style": "form",
+                  "explode": true,
+                  "description": "test"
+                }
+              ]
+            }
+          },
+          "responses": [
+            {
+              "status": "200",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "PlaygroundResponse"
+              },
+              "description": "OK"
+            }
+          ],
+          "success": [
+            "200"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "DefaultService",
+      "folder": "default",
+      "operations": [
+        {
+          "name": "postPlayground",
+          "operationId": "postPlayground",
+          "method": "POST",
+          "path": "/v1/playground",
+          "parameters": {},
+          "requestBody": {
+            "contentType": "application/json",
+            "stream": false,
+            "type": {
+              "kind": "union",
+              "mode": "oneOf",
+              "members": [
+                {
+                  "kind": "ref",
+                  "name": "ContactInfoRequest"
+                },
+                {
+                  "kind": "ref",
+                  "name": "OffsetInfoRequest"
+                }
+              ]
+            },
+            "required": true
+          },
+          "responses": [
+            {
+              "status": "200",
+              "contentType": "application/json",
+              "stream": false,
+              "type": {
+                "kind": "ref",
+                "name": "PlaygroundResponse"
+              },
+              "description": "OK"
+            }
+          ],
+          "success": [
+            "200"
+          ]
+        }
+      ]
+    }
+  ],
+  "hooks": {},
+  "warnings": []
+}

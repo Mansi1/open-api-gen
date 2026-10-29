@@ -1,0 +1,22 @@
+{
+  "declarations": 369,
+  "byKind": {
+    "components": 271,
+    "request": 1,
+    "response": 0,
+    "parameter": 97
+  },
+  "services": [
+    "AccountsService:3",
+    "AuthenticationService:5",
+    "BillingCostsAnalysisService:4",
+    "DeploymentTemplatesService:2",
+    "DeploymentsService:41",
+    "DeploymentsTrafficFilterService:9",
+    "ExtensionsService:6",
+    "StackService:1"
+  ],
+  "transformed": 77,
+  "runtime": 272,
+  "warnings": []
+}

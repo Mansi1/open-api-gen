@@ -1,0 +1,14 @@
+{
+  "version": "1.4.0",
+  "creation": "12.5.2023 16:51:34",
+  "path": "examples/SpaceTraders.json",
+  "config": {
+    "logLevel": "INFO",
+    "onlyComponents": false,
+    "force": false,
+    "source": "examples/SpaceTraders.json",
+    "output": "dist3",
+    "config": "open-api-config.json",
+    "language": "ts"
+  }
+}
