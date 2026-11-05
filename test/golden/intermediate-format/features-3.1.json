@@ -7,6 +7,7 @@
     "version": "1.0.0"
   },
   "servers": [],
+  "securitySchemes": {},
   "declarations": [
     {
       "name": "Shape",
@@ -781,7 +782,8 @@
           ],
           "success": [
             "200"
-          ]
+          ],
+          "security": []
         }
       ]
     },
@@ -810,7 +812,8 @@
           ],
           "success": [
             "200"
-          ]
+          ],
+          "security": []
         }
       ]
     },
@@ -844,7 +847,8 @@
           ],
           "success": [
             "204"
-          ]
+          ],
+          "security": []
         }
       ]
     }

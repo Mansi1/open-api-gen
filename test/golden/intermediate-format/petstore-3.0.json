@@ -27,6 +27,7 @@
       "url": "https://petstore.example.com"
     }
   ],
+  "securitySchemes": {},
   "declarations": [
     {
       "name": "PetStatus",
@@ -529,7 +530,8 @@
           ],
           "success": [
             "200"
-          ]
+          ],
+          "security": []
         },
         {
           "name": "createPet",
@@ -560,7 +562,8 @@
           ],
           "success": [
             "201"
-          ]
+          ],
+          "security": []
         },
         {
           "name": "getPet",
@@ -608,7 +611,8 @@
           ],
           "success": [
             "200"
-          ]
+          ],
+          "security": []
         },
         {
           "name": "deletePet",
@@ -646,7 +650,8 @@
           ],
           "success": [
             "204"
-          ]
+          ],
+          "security": []
         }
       ]
     }

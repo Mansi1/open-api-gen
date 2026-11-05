@@ -156,6 +156,10 @@ class ServiceFile {
     }
     fields.push(`responseContentTypes: [${[...responseContentTypes].map(quote).join(", ")}]`);
     fields.push(`parameterStyles: ${this.renderParameterStyles(operation)}`);
+    if (operation.security.length > 0) {
+      const alternatives = operation.security.map((schemeNames) => `[${schemeNames.map((schemeName) => quote(schemeName)).join(", ")}]`);
+      fields.push(`security: [${alternatives.join(", ")}]`);
+    }
     const stream = operation.responses.some((response) => operation.success.includes(response.status) && response.stream);
     fields.push(`stream: ${stream}`);
     if (this.mayAnswerWithoutBody(operation)) {

@@ -7,6 +7,7 @@
     "version": "1.0.0"
   },
   "servers": [],
+  "securitySchemes": {},
   "declarations": [
     {
       "name": "PetStatus",
@@ -330,7 +331,8 @@
           ],
           "success": [
             "200"
-          ]
+          ],
+          "security": []
         },
         {
           "name": "createPet",
@@ -361,7 +363,8 @@
           ],
           "success": [
             "201"
-          ]
+          ],
+          "security": []
         },
         {
           "name": "getPet",
@@ -403,7 +406,8 @@
           ],
           "success": [
             "200"
-          ]
+          ],
+          "security": []
         }
       ]
     }

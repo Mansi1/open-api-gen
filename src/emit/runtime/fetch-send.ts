@@ -12,6 +12,20 @@ export type Middleware = {
   onResponse?: (response: Response, request: Request, details: SendRequest) => Response | void | Promise<Response | void>;
 };
 
+/** An OpenAPI security scheme as the generated `securitySchemes` lists it. */
+export type SecurityScheme =
+  | { type: "apiKey"; in: "header" | "query" | "cookie"; name: string; description?: string }
+  | { type: "http"; scheme: string; description?: string }
+  | { type: "oauth2" | "openIdConnect" | "mutualTLS"; description?: string };
+
+export type BasicCredentials = { username: string; password: string };
+
+/** A credential, or a function (may be async) called per attempt; undefined means "none right now", e.g. logged out. */
+export type Credential<Value> = Value | (() => Value | undefined | Promise<Value | undefined>);
+
+/** Credentials by security scheme name: a token or API key, or username and password for HTTP basic. */
+export type AuthCredentials = Record<string, Credential<string> | Credential<BasicCredentials> | undefined>;
+
 export type FetchSendOptions = {
   /** Prefix for every path, e.g. `https://api.example.com/v1`. */
   baseUrl: string;
@@ -27,6 +41,10 @@ export type FetchSendOptions = {
   retry?: number | RetryOptions;
   /** Request and response hooks, run in order. */
   middleware?: Middleware[];
+  /** Credentials by security scheme name, applied as each operation's security requirements say. */
+  auth?: AuthCredentials;
+  /** The document's security schemes; createClient passes the generated `securitySchemes`. */
+  securitySchemes?: Record<string, SecurityScheme>;
 };
 
 /**
@@ -94,6 +112,12 @@ export function createFetchSend(options: FetchSendOptions): Send {
     let response: Response | undefined;
     for (let attempt = 0; response === undefined; attempt++) {
       const headers = await buildHeaders(options, request, bodyContentType);
+      const authQuery = await applyAuth(options, request, headers);
+      finishHeaders(request, headers);
+      let attemptUrl = url;
+      if (authQuery !== "") {
+        attemptUrl = url.includes("?") ? `${url}&${authQuery}` : `${url}?${authQuery}`;
+      }
       const signals: AbortSignal[] = [];
       if (callOptions.signal !== undefined) {
         signals.push(callOptions.signal);
@@ -108,7 +132,7 @@ export function createFetchSend(options: FetchSendOptions): Send {
       if (signals.length > 0) {
         init.signal = signals.length === 1 ? signals[0]! : AbortSignal.any(signals);
       }
-      let fetchRequest = new Request(url, init);
+      let fetchRequest = new Request(attemptUrl, init);
       for (const hooks of middleware) {
         fetchRequest = (await hooks.onRequest?.(fetchRequest, request)) ?? fetchRequest;
       }
@@ -149,7 +173,7 @@ export function createFetchSend(options: FetchSendOptions): Send {
   };
 }
 
-/** Client headers, then header parameters, then the call's own headers; later ones win. */
+/** Client headers, then header parameters, cookies and content type; auth and finishHeaders follow. */
 async function buildHeaders(options: FetchSendOptions, request: SendRequest, bodyContentType: string | undefined): Promise<Headers> {
   const headers = new Headers(typeof options.headers === "function" ? await options.headers() : options.headers);
   for (const [name, value] of Object.entries(request.headerParameter ?? {})) {
@@ -164,13 +188,91 @@ async function buildHeaders(options: FetchSendOptions, request: SendRequest, bod
   if (bodyContentType !== undefined) {
     headers.set("content-type", bodyContentType);
   }
+  return headers;
+}
+
+/** The call's own headers last, so they win over client headers, header parameters and auth; then the default Accept. */
+function finishHeaders(request: SendRequest, headers: Headers): void {
   for (const [name, value] of Object.entries(request.options?.headers ?? {})) {
     headers.set(name, value);
   }
   if (request.responseContentTypes.length > 0 && !headers.has("accept")) {
     headers.set("accept", request.responseContentTypes.join(", "));
   }
-  return headers;
+}
+
+// ---------------------------------------------------------------- auth
+
+async function resolveCredential(credential: AuthCredentials[string]): Promise<string | BasicCredentials | undefined> {
+  if (typeof credential === "function") {
+    return credential();
+  }
+  return credential;
+}
+
+function base64(text: string): string {
+  let binary = "";
+  for (const byte of new TextEncoder().encode(text)) {
+    binary += String.fromCharCode(byte);
+  }
+  return btoa(binary);
+}
+
+/**
+ * Applies the first security alternative whose schemes all have credentials (alternatives are OR, the schemes
+ * inside one are AND): headers and cookies directly, API keys for the query as the returned query text.
+ * Each credential function runs at most once per attempt. When no alternative is satisfied the request goes
+ * out without credentials and the server decides, rather than failing here on a requirement the server may not enforce.
+ */
+async function applyAuth(options: FetchSendOptions, request: SendRequest, headers: Headers): Promise<string> {
+  if (request.security === undefined || options.auth === undefined) {
+    return "";
+  }
+  const resolved = new Map<string, string | BasicCredentials | undefined>();
+  const credentialOf = async (schemeName: string) => {
+    if (!resolved.has(schemeName)) {
+      resolved.set(schemeName, await resolveCredential(options.auth?.[schemeName]));
+    }
+    return resolved.get(schemeName);
+  };
+  for (const alternative of request.security) {
+    const values: [SecurityScheme, string | BasicCredentials][] = [];
+    for (const schemeName of alternative) {
+      const scheme = options.securitySchemes?.[schemeName];
+      // Mutual TLS is the transport's business (client certificates); it needs no value here.
+      const value = scheme?.type === "mutualTLS" ? "" : await credentialOf(schemeName);
+      if (scheme === undefined || value === undefined) {
+        break;
+      }
+      values.push([scheme, value]);
+    }
+    // An empty alternative ({}) means "no credentials needed"; skip it so a later one can still send what is configured.
+    if (alternative.length === 0 || values.length !== alternative.length) {
+      continue;
+    }
+    const queryParts: string[] = [];
+    for (const [scheme, value] of values) {
+      const text = typeof value === "string" ? value : `${value.username}:${value.password}`;
+      if (scheme.type === "apiKey" && scheme.in === "header") {
+        headers.set(scheme.name, text);
+      } else if (scheme.type === "apiKey" && scheme.in === "query") {
+        queryParts.push(`${encodeURIComponent(scheme.name)}=${encodeURIComponent(text)}`);
+      } else if (scheme.type === "apiKey") {
+        const existing = headers.get("cookie");
+        const cookie = `${scheme.name}=${encodeURIComponent(text)}`;
+        headers.set("cookie", existing === null ? cookie : `${existing}; ${cookie}`);
+      } else if (scheme.type === "http" && scheme.scheme === "basic") {
+        headers.set("authorization", `Basic ${base64(text)}`);
+      } else if (scheme.type === "http" && scheme.scheme !== "bearer") {
+        // Other HTTP schemes (e.g. a custom token scheme): the scheme name, then the value as given.
+        headers.set("authorization", `${scheme.scheme.charAt(0).toUpperCase()}${scheme.scheme.slice(1)} ${text}`);
+      } else if (scheme.type !== "mutualTLS") {
+        headers.set("authorization", `Bearer ${text}`);
+      }
+    }
+    return queryParts.join("&");
+  }
+  return "";
 }
 
 // ---------------------------------------------------------------- retry

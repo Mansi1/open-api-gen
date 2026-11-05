@@ -42,3 +42,6 @@ Wrap: EVERY lead → test | .agents/VERIFY.py rule | one MEMORY line with BC, th
 2026-11-05T22:47:15Z s=f7b31668 DONE fp=98a13dfffab4 cov=78.5% paths=ARCH.md,README.md,input/smoke.ts,src/emit/client.ts(+22)
 2026-11-05T22:47:15Z s=f7b31668 FINDING src/emit/services.ts:ServiceFile.render runtime imports learn=test: test/services.test.ts 'typed errors' strict-type-checks test/fixtures/errors-3.1.yaml, which has schemas ApiError, RequestOptions, ServiceConfig used in the ser
 2026-11-05T22:51:02Z s=f7b31668 DONE fp=de8f66124afd cov=78.5% paths=ARCH.md,README.md,input/open-api-gen.config.json,input/smoke.ts(+27)
+2026-11-05T22:58:47Z s=f7b31668 DONE fp=d47ec9da94af cov=77.2% paths=ARCH.md,README.md,input/open-api-gen.config.json,input/smoke.ts(+29)
+2026-11-05T22:58:47Z s=f7b31668 FINDING src/emit/runtime/fetch-send.ts:buildHeaders/applyAuth order learn=test: test/services.test.ts auth live test asserts a per-call authorization header wins over auth
+2026-11-05T22:58:47Z s=f7b31668 FINDING src/intermediate-format/normalize.ts:normalizeSecurity learn=test: golden test/golden/intermediate-format/open-api-milkscout.json pins exactly one such warning

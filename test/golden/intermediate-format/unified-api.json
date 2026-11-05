@@ -12,6 +12,12 @@
       "description": "Local"
     }
   ],
+  "securitySchemes": {
+    "bearerAuth": {
+      "type": "http",
+      "scheme": "bearer"
+    }
+  },
   "declarations": [
     {
       "name": "StatusResponse",
@@ -1111,6 +1117,11 @@
           ],
           "success": [
             "200"
+          ],
+          "security": [
+            [
+              "bearerAuth"
+            ]
           ]
         },
         {
@@ -1201,6 +1212,11 @@
           ],
           "success": [
             "200"
+          ],
+          "security": [
+            [
+              "bearerAuth"
+            ]
           ]
         },
         {
@@ -1291,6 +1307,11 @@
           ],
           "success": [
             "200"
+          ],
+          "security": [
+            [
+              "bearerAuth"
+            ]
           ]
         }
       ]
@@ -1328,7 +1349,8 @@
           ],
           "success": [
             "200"
-          ]
+          ],
+          "security": []
         }
       ]
     },
@@ -1460,7 +1482,8 @@
           ],
           "success": [
             "200"
-          ]
+          ],
+          "security": []
         }
       ]
     },
@@ -1508,7 +1531,8 @@
           ],
           "success": [
             "200"
-          ]
+          ],
+          "security": []
         }
       ]
     }

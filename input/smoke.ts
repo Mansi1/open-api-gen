@@ -5,7 +5,7 @@ import type { AddressInfo } from "node:net";
 import { Decimal } from "../../input/hooks/decimal.js";
 import { ApiError, createClient, createFetchSend, isApiError, ResponseValidationError, servers, StoreService, type Middleware } from "../clients/petstore-app/index.js";
 
-type Received = { method: string; url: string; body: string; contentType: string };
+type Received = { method: string; url: string; body: string; contentType: string; apiKey: string };
 const received: Received[] = [];
 let busyAnswers = 0;
 
@@ -19,7 +19,7 @@ async function handle(request: IncomingMessage, response: ServerResponse): Promi
   for await (const chunk of request) {
     body += String(chunk);
   }
-  received.push({ method: request.method ?? "", url: request.url ?? "", body, contentType: request.headers["content-type"] ?? "" });
+  received.push({ method: request.method ?? "", url: request.url ?? "", body, contentType: request.headers["content-type"] ?? "", apiKey: String(request.headers["api_key"] ?? "") });
   if (request.url === "/store/order/9007199254740993") {
     respond(response, 200, '{"id":9007199254740993,"petId":12,"quantity":2,"shipDate":"2026-03-04T05:06:07.000Z","status":"placed","complete":false}');
   } else if (request.url === "/store/order/1") {
@@ -87,7 +87,7 @@ try {
   check(servers[0]?.url === "/v3", "servers lists the document's servers");
   const statuses: number[] = [];
   const middleware: Middleware[] = [{ onResponse: (answer) => void statuses.push(answer.status) }];
-  const api = createClient({ baseUrl: `http://127.0.0.1:${port}`, transform: true, validate: true, retry: { retries: 2, delay: 1 }, middleware });
+  const api = createClient({ baseUrl: `http://127.0.0.1:${port}`, transform: true, validate: true, retry: { retries: 2, delay: 1 }, middleware, auth: { api_key: async () => "secret-key" } });
   busyAnswers = 2;
   let remaining: string | null = null;
   const retried = await api.store.getInventory({
@@ -97,6 +97,9 @@ try {
   });
   check(retried.available === 3 && statuses.join(",") === "503,503,200", "createClient retries a busy GET and runs the middleware per attempt");
   check(String(remaining) === "9", "a per-call onResponse reads response headers");
+  check(received[received.length - 1]!.apiKey === "secret-key", "auth sends the api_key the operation's security requires");
+  await api.store.getOrderById({ orderId: 9007199254740993n });
+  check(received[received.length - 1]!.apiKey === "", "an operation without security requirements sends no api_key");
 
   let timeoutError: unknown;
   try {

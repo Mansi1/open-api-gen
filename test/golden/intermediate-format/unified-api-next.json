@@ -12,6 +12,7 @@
       "url": "https://unified-api.ins-dev.c12r.io"
     }
   ],
+  "securitySchemes": {},
   "declarations": [
     {
       "name": "OrderInfoRequestHeader",
@@ -1595,7 +1596,8 @@
           ],
           "success": [
             "200"
-          ]
+          ],
+          "security": []
         },
         {
           "name": "getOrderV2IndividualOrderByOrderId",
@@ -1685,7 +1687,8 @@
           ],
           "success": [
             "200"
-          ]
+          ],
+          "security": []
         },
         {
           "name": "deleteOrderV2IndividualOrderByOrderId",
@@ -1775,7 +1778,8 @@
           ],
           "success": [
             "200"
-          ]
+          ],
+          "security": []
         },
         {
           "name": "patchOrderV2IndividualOrderByOrderId",
@@ -1865,7 +1869,8 @@
           ],
           "success": [
             "200"
-          ]
+          ],
+          "security": []
         }
       ]
     },
@@ -1955,7 +1960,8 @@
           ],
           "success": [
             "200"
-          ]
+          ],
+          "security": []
         },
         {
           "name": "getOrderV2CollectiveOrderByCollectiveOrderId",
@@ -2045,7 +2051,8 @@
           ],
           "success": [
             "200"
-          ]
+          ],
+          "security": []
         },
         {
           "name": "postOrderV2SubOrderByCollectiveOrderId",
@@ -2144,7 +2151,8 @@
           ],
           "success": [
             "200"
-          ]
+          ],
+          "security": []
         },
         {
           "name": "getOrderV2SubOrderByOrderId",
@@ -2234,7 +2242,8 @@
           ],
           "success": [
             "200"
-          ]
+          ],
+          "security": []
         },
         {
           "name": "deleteOrderV2SubOrderByOrderId",
@@ -2324,7 +2333,8 @@
           ],
           "success": [
             "200"
-          ]
+          ],
+          "security": []
         },
         {
           "name": "patchOrderV2SubOrderByOrderId",
@@ -2414,7 +2424,8 @@
           ],
           "success": [
             "200"
-          ]
+          ],
+          "security": []
         }
       ]
     },
@@ -2504,7 +2515,8 @@
           ],
           "success": [
             "200"
-          ]
+          ],
+          "security": []
         }
       ]
     },
@@ -2585,7 +2597,8 @@
           ],
           "success": [
             "200"
-          ]
+          ],
+          "security": []
         }
       ]
     },
@@ -2626,7 +2639,8 @@
           ],
           "success": [
             "200"
-          ]
+          ],
+          "security": []
         }
       ]
     }

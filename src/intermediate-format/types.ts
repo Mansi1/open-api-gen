@@ -13,6 +13,8 @@ export type IntermediateFormat = {
    * VERIFIED: an absent or empty list means one server with url `/` (spec/openapi-3.1.2.md:328); the runtime applies that default.
    */
   servers: Server[];
+  /** `components.securitySchemes` by name, references resolved; `auth` credentials of the generated client are keyed by these names. */
+  securitySchemes: Record<string, SecurityScheme>;
   /** Every named type; Stage 2 writes one file per declaration. */
   declarations: Declaration[];
   services: Service[];
@@ -28,6 +30,13 @@ export type Diagnostic = { pointer: string; message: string };
 export type Server = { url: string; description?: string; variables?: Record<string, ServerVariable> };
 
 export type ServerVariable = { default: string; enum?: string[]; description?: string };
+
+/** An OpenAPI Security Scheme Object, reduced to what a client needs to send credentials. */
+export type SecurityScheme =
+  | { type: "apiKey"; in: "header" | "query" | "cookie"; name: string; description?: string }
+  /** `scheme` is lower case, e.g. `bearer`, `basic`, `digest`. */
+  | { type: "http"; scheme: string; description?: string }
+  | { type: "oauth2" | "openIdConnect" | "mutualTLS"; description?: string };
 
 export type Hook = { type: string; import: string; decode: string; encode: string };
 
@@ -174,4 +183,9 @@ export type Operation = {
   responses: Response[];
   /** Status codes that count as success (2xx, or `default` when there is no 2xx). */
   success: string[];
+  /**
+   * Effective security requirements: alternatives, each a list of scheme names that apply together (scopes dropped).
+   * The operation's own `security`, else the document's; empty WHEN the operation needs no credentials.
+   */
+  security: string[][];
 };

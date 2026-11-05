@@ -1,7 +1,7 @@
 // Emits client.ts: the document's servers and createClient, which builds every service with one shared configuration.
 // The logic lives in runtime/client.ts; this file only lists the servers and services of this API.
 // VERIFIED: test/services.test.ts calls the generated createClient against a real Bun.serve server.
-import type { IntermediateFormat, Server } from "../intermediate-format/types.ts";
+import type { IntermediateFormat, SecurityScheme, Server } from "../intermediate-format/types.ts";
 import { HEADER, importPath, type Files } from "./layout.ts";
 import { docComment, identifier, propertyKey, quote } from "./names.ts";
 import { servicePath } from "./services.ts";
@@ -35,10 +35,48 @@ function renderServer(server: Server): string {
   return `${INDENT}{ ${fields.join(", ")} },\n`;
 }
 
+function renderSecurityScheme(scheme: SecurityScheme): string {
+  const fields = [`type: ${quote(scheme.type)}`];
+  if (scheme.type === "apiKey") {
+    fields.push(`in: ${quote(scheme.in)}`, `name: ${quote(scheme.name)}`);
+  } else if (scheme.type === "http") {
+    fields.push(`scheme: ${quote(scheme.scheme)}`);
+  }
+  return `{ ${fields.join(", ")} }`;
+}
+
+/** What the credential of a scheme is and where it goes, for the doc comment of its ApiAuth key. */
+function describeSecurityScheme(scheme: SecurityScheme): string {
+  if (scheme.type === "apiKey") {
+    return `API key, sent as ${scheme.in} \`${scheme.name}\`.`;
+  }
+  if (scheme.type === "http" && scheme.scheme === "basic") {
+    return "Username and password, sent as `Authorization: Basic …`.";
+  }
+  if (scheme.type === "http" && scheme.scheme !== "bearer") {
+    return `Value sent as \`Authorization: ${scheme.scheme} …\`.`;
+  }
+  return `Token (${scheme.type === "http" ? "HTTP bearer" : scheme.type}), sent as \`Authorization: Bearer …\`; obtaining it is up to you.`;
+}
+
+/** `ApiAuth` members: basic schemes take username and password, mutual TLS needs nothing, all others a string. */
+function renderAuthMembers(securitySchemes: Record<string, SecurityScheme>): string {
+  const members: string[] = [];
+  for (const [schemeName, scheme] of Object.entries(securitySchemes)) {
+    if (scheme.type === "mutualTLS") {
+      continue;
+    }
+    const comment = scheme.description === undefined ? [describeSecurityScheme(scheme)] : [scheme.description, "", describeSecurityScheme(scheme)];
+    const valueType = scheme.type === "http" && scheme.scheme === "basic" ? "BasicCredentials" : "string";
+    members.push(`${docComment(comment, INDENT)}${INDENT}${propertyKey(schemeName)}?: Credential<${valueType}>;\n`);
+  }
+  return members.join("");
+}
+
 function renderClient(intermediateFormat: IntermediateFormat): string {
   const imports = [
     `import { createServiceConfig, type ClientOptions, type Server } from ${quote(importPath(CLIENT_PATH, "runtime/client.ts"))};`,
-    `import { isApiErrorOf } from ${quote(importPath(CLIENT_PATH, "runtime/fetch-send.ts"))};`,
+    `import { isApiErrorOf, type BasicCredentials, type Credential, type SecurityScheme } from ${quote(importPath(CLIENT_PATH, "runtime/fetch-send.ts"))};`,
   ];
   const errorTypes: string[] = [];
   const clientTypeMembers: string[] = [];
@@ -55,6 +93,9 @@ function renderClient(intermediateFormat: IntermediateFormat): string {
   }
 
   const servers = intermediateFormat.servers.map((server) => renderServer(server)).join("");
+  const securitySchemes = Object.entries(intermediateFormat.securitySchemes)
+    .map(([schemeName, scheme]) => `${INDENT}${propertyKey(schemeName)}: ${renderSecurityScheme(scheme)},\n`)
+    .join("");
   const defaultServer = intermediateFormat.servers[0]?.url ?? "/";
   const title = intermediateFormat.source.title === "" ? "the API" : intermediateFormat.source.title;
   return [
@@ -62,14 +103,18 @@ function renderClient(intermediateFormat: IntermediateFormat): string {
     `${imports.join("\n")}\n\n`,
     docComment([`The servers ${title} declares, in the document's order; pick one with \`serverUrl(servers[index], variables)\`.`]),
     `export const servers: Server[] = [\n${servers}];\n\n`,
+    docComment([`The security schemes ${title} declares, by name; createClient hands them to the transport.`]),
+    `export const securitySchemes: Record<string, SecurityScheme> = {\n${securitySchemes}};\n\n`,
+    docComment(["Credentials by security scheme name: a value, or a function (may be async) called per request."]),
+    `export type ApiAuth = {\n${renderAuthMembers(intermediateFormat.securitySchemes)}};\n\n`,
     docComment([`Every service of ${title}, sharing one configuration.`]),
     `export type ApiClient<Transform extends boolean = false> = {\n${clientTypeMembers.join("")}};\n\n`,
     docComment([
       "Creates every service with one transport and one set of options.",
       `\`baseUrl\` defaults to \`${defaultServer.replaceAll("`", "'")}\`; \`transform: true\` switches all methods to App types.`,
     ]),
-    `export function createClient<Transform extends boolean = false>(options: ClientOptions<Transform> = {}): ApiClient<Transform> {\n`,
-    `${INDENT}const config = createServiceConfig(options, servers);\n`,
+    `export function createClient<Transform extends boolean = false>(options: ClientOptions<Transform, ApiAuth> = {}): ApiClient<Transform> {\n`,
+    `${INDENT}const config = createServiceConfig(options, servers, securitySchemes);\n`,
     `${INDENT}return {\n${clientValueMembers.join("")}${INDENT}};\n`,
     "}\n\n",
     docComment(["The declared errors of every operation, keyed by operationId."]),

@@ -6,7 +6,7 @@ import { camel, kebab, pascal } from "./naming.ts";
 import { deref, escapePointerToken, isRef, mergePathItem, refPointer, resolve, unescapePointerToken } from "./refs.ts";
 import type {
   Body, Constraints, Declaration, DeclarationKind, Diagnostic, Discriminator, IntermediateFormat, Operation, Parameter, ParameterGroup,
-  ParameterLocation, Property, Response, Scalar, Server, ServerVariable, Service, TypeNode,
+  ParameterLocation, Property, Response, Scalar, SecurityScheme, Server, ServerVariable, Service, TypeNode,
 } from "./types.ts";
 
 // The ONE module that knows how OpenAPI 3.0, 3.1 and 3.2 differ. Everything after it sees only the intermediate format.
@@ -20,6 +20,9 @@ type NormalizeContext = {
   namesByPointer: Map<string, string>;
   declarations: Map<string, Declaration>;
   warnings: Diagnostic[];
+  securitySchemes: Record<string, SecurityScheme>;
+  /** Undefined scheme names already warned about, so a spec using one everywhere gets one warning, not hundreds. */
+  undefinedSchemeNames: Set<string>;
 };
 
 const STANDARD_METHODS = ["get", "put", "post", "delete", "options", "head", "patch", "trace"];
@@ -33,7 +36,7 @@ const STRUCTURAL_TOKENS = ["components", "schemas", "$defs", "definitions", "pro
 
 /** Builds the intermediate format skeleton: declarations, services, operations. Transforms (codecs, renames) are added later by planTransforms. */
 export function normalize(document: JsonObject, version: OpenApiVersion, sourcePath: string): IntermediateFormat {
-  const context: NormalizeContext = { document, version, namesByPointer: new Map(), declarations: new Map(), warnings: [] };
+  const context: NormalizeContext = { document, version, namesByPointer: new Map(), declarations: new Map(), warnings: [], securitySchemes: normalizeSecuritySchemes(document), undefinedSchemeNames: new Set() };
   const components = (document.components ?? {}) as JsonObject;
   const schemas = (components.schemas ?? {}) as JsonObject;
 
@@ -60,6 +63,7 @@ export function normalize(document: JsonObject, version: OpenApiVersion, sourceP
       ...optionalText("description", info.description),
     },
     servers: normalizeServers(document.servers),
+    securitySchemes: context.securitySchemes,
     declarations: [...context.declarations.values()],
     services,
     hooks: {},
@@ -663,6 +667,7 @@ function normalizeOperation(context: NormalizeContext, input: OperationInput): O
   }
 
   const { responses, success } = normalizeResponses(context, operation, pointer, typeBase);
+  const security = normalizeSecurity(context, operation.security ?? context.document.security, pointer);
   return {
     name: camel(operationId),
     operationId,
@@ -676,7 +681,48 @@ function normalizeOperation(context: NormalizeContext, input: OperationInput): O
     ...(requestBody !== undefined ? { requestBody } : {}),
     responses,
     success,
+    security,
   };
+}
+
+/** Security Requirement Objects → alternatives of scheme names. An alternative naming an undefined scheme is dropped, warned once per name at its first use. */
+function normalizeSecurity(context: NormalizeContext, requirements: unknown, pointer: string): string[][] {
+  if (!Array.isArray(requirements)) {
+    return [];
+  }
+  const alternatives: string[][] = [];
+  for (const requirement of requirements as JsonObject[]) {
+    const schemeNames = Object.keys(requirement ?? {});
+    const unknownName = schemeNames.find((schemeName) => context.securitySchemes[schemeName] === undefined);
+    if (unknownName !== undefined) {
+      if (!context.undefinedSchemeNames.has(unknownName)) {
+        context.undefinedSchemeNames.add(unknownName);
+        context.warnings.push({ pointer, message: `security requirement names undefined scheme "${unknownName}"; alternatives naming it are ignored here and everywhere else` });
+      }
+      continue;
+    }
+    alternatives.push(schemeNames);
+  }
+  return alternatives;
+}
+
+/** `components.securitySchemes` with references resolved; spec validation already checked their shape. */
+function normalizeSecuritySchemes(document: JsonObject): Record<string, SecurityScheme> {
+  const components = (document.components ?? {}) as JsonObject;
+  const schemes = (components.securitySchemes ?? {}) as JsonObject;
+  const result: Record<string, SecurityScheme> = {};
+  for (const [schemeName, schemeValue] of Object.entries(schemes)) {
+    const scheme = deref(document, schemeValue).value as JsonObject;
+    const description = optionalText("description", scheme.description);
+    if (scheme.type === "apiKey") {
+      result[schemeName] = { type: "apiKey", in: scheme.in as "header" | "query" | "cookie", name: String(scheme.name), ...description };
+    } else if (scheme.type === "http") {
+      result[schemeName] = { type: "http", scheme: String(scheme.scheme).toLowerCase(), ...description };
+    } else if (scheme.type === "oauth2" || scheme.type === "openIdConnect" || scheme.type === "mutualTLS") {
+      result[schemeName] = { type: scheme.type, ...description };
+    }
+  }
+  return result;
 }
 
 function uniqueOperationId(context: NormalizeContext, input: OperationInput): string {

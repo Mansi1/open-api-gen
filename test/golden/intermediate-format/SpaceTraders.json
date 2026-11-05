@@ -13,6 +13,13 @@
       "description": "v2"
     }
   ],
+  "securitySchemes": {
+    "AgentToken": {
+      "type": "http",
+      "scheme": "bearer",
+      "description": "When you register a new agent you will be granted a private bearer token which grants authorization to use the API."
+    }
+  },
   "declarations": [
     {
       "name": "Agent",
@@ -11531,6 +11538,11 @@
           ],
           "success": [
             "200"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         },
         {
@@ -11573,6 +11585,11 @@
           ],
           "success": [
             "200"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         }
       ]
@@ -11641,6 +11658,11 @@
           ],
           "success": [
             "200"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         },
         {
@@ -11674,6 +11696,11 @@
           ],
           "success": [
             "201"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         },
         {
@@ -11715,6 +11742,11 @@
           ],
           "success": [
             "200"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         },
         {
@@ -11757,6 +11789,11 @@
           ],
           "success": [
             "200"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         },
         {
@@ -11799,6 +11836,11 @@
           ],
           "success": [
             "200"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         },
         {
@@ -11850,6 +11892,11 @@
           ],
           "success": [
             "200"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         },
         {
@@ -11892,6 +11939,11 @@
           ],
           "success": [
             "201"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         },
         {
@@ -11940,6 +11992,11 @@
           "success": [
             "200",
             "204"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         },
         {
@@ -11982,6 +12039,11 @@
           ],
           "success": [
             "200"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         },
         {
@@ -12024,6 +12086,11 @@
           ],
           "success": [
             "201"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         },
         {
@@ -12075,6 +12142,11 @@
           ],
           "success": [
             "201"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         },
         {
@@ -12125,6 +12197,11 @@
           ],
           "success": [
             "200"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         },
         {
@@ -12175,6 +12252,11 @@
           ],
           "success": [
             "200"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         },
         {
@@ -12226,6 +12308,11 @@
           ],
           "success": [
             "200"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         },
         {
@@ -12268,6 +12355,11 @@
           ],
           "success": [
             "200"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         },
         {
@@ -12319,6 +12411,11 @@
           ],
           "success": [
             "200"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         },
         {
@@ -12369,6 +12466,11 @@
           ],
           "success": [
             "200"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         },
         {
@@ -12419,6 +12521,11 @@
           ],
           "success": [
             "201"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         },
         {
@@ -12460,6 +12567,11 @@
           ],
           "success": [
             "201"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         },
         {
@@ -12501,6 +12613,11 @@
           ],
           "success": [
             "201"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         },
         {
@@ -12542,6 +12659,11 @@
           ],
           "success": [
             "201"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         },
         {
@@ -12583,6 +12705,11 @@
           ],
           "success": [
             "200"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         },
         {
@@ -12633,6 +12760,11 @@
           ],
           "success": [
             "201"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         },
         {
@@ -12683,6 +12815,11 @@
           ],
           "success": [
             "200"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         }
       ]
@@ -12751,6 +12888,11 @@
           ],
           "success": [
             "200"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         },
         {
@@ -12793,6 +12935,11 @@
           ],
           "success": [
             "200"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         },
         {
@@ -12834,6 +12981,11 @@
           ],
           "success": [
             "200"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         },
         {
@@ -12885,6 +13037,11 @@
           ],
           "success": [
             "200"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         },
         {
@@ -12927,6 +13084,11 @@
           ],
           "success": [
             "200"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         }
       ]
@@ -12995,6 +13157,11 @@
           ],
           "success": [
             "200"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         },
         {
@@ -13037,6 +13204,11 @@
           ],
           "success": [
             "200"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         },
         {
@@ -13114,6 +13286,11 @@
           ],
           "success": [
             "200"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         },
         {
@@ -13167,6 +13344,11 @@
           ],
           "success": [
             "200"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         },
         {
@@ -13220,6 +13402,11 @@
           ],
           "success": [
             "200"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         },
         {
@@ -13273,6 +13460,11 @@
           ],
           "success": [
             "200"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         },
         {
@@ -13326,6 +13518,11 @@
           ],
           "success": [
             "200"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         }
       ]
@@ -13358,6 +13555,11 @@
           ],
           "success": [
             "200"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         }
       ]
@@ -13398,6 +13600,11 @@
           ],
           "success": [
             "201"
+          ],
+          "security": [
+            [
+              "AgentToken"
+            ]
           ]
         }
       ]

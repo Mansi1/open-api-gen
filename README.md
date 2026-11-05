@@ -66,6 +66,7 @@ Each operation is a method named after its `operationId`. Its arguments come in 
 | Option | Meaning |
 |---|---|
 | `baseUrl` | Prefix for every path. Defaults to the first entry of `servers`, with its variables at their defaults, or `/` when the document declares none |
+| `auth` | Credentials by security scheme name (see [Auth](#auth)) |
 | `headers` | Sent with every request; an object, or a function (may be async) called per attempt, e.g. for a token that expires |
 | `timeout` | Milliseconds per attempt before it fails with a `TimeoutError` (default: no limit) |
 | `retry` | A number of retries, or `{ retries, delay, maxDelay, statusCodes, methods }` (see below; default: no retries) |
@@ -83,6 +84,32 @@ import { createClient, serverUrl, servers } from "./api/index.js";
 
 const api = createClient({ baseUrl: serverUrl(servers[1]!, { region: "eu" }) });
 ```
+
+### Auth
+
+`auth` takes one credential per security scheme of the document, keyed by the scheme's name in `components.securitySchemes`. The generated `ApiAuth` type lists the schemes:
+
+```ts
+const api = createClient({
+  auth: {
+    bearerAuth: async () => (await session()).accessToken, // http bearer, oauth2, openIdConnect
+    basicAuth: { username: "ada", password: "secret" },    // http basic
+    api_key: process.env.API_KEY,                          // apiKey in header, query or cookie
+  },
+});
+```
+
+A credential is a value or a function, which may be async and is called before each attempt; return `undefined` to send nothing. Each operation sends the credentials its `security` requirement names. That is the operation's own requirement, or the document's when the operation has none; `security: []` sends nothing. When a requirement lists alternatives, the first one with all of its credentials configured is used, and the schemes inside one alternative are all sent. Without a matching credential the request goes out without auth and the server answers. A per-call `authorization` header wins over `auth`.
+
+| Scheme | Sent as |
+|---|---|
+| `apiKey` | the header, query parameter or cookie the scheme names |
+| `http` with `bearer`, `oauth2`, `openIdConnect` | `Authorization: Bearer <token>` |
+| `http` with `basic` | `Authorization: Basic <base64 of username:password>` (UTF-8) |
+| `http` with any other scheme, e.g. `token` | `Authorization: Token <value>` |
+| `mutualTLS` | nothing; client certificates belong to your fetch or runtime |
+
+The client does not obtain tokens: running an OAuth flow and refreshing tokens is up to your credential function. A requirement naming a scheme the document does not define produces one warning and is ignored.
 
 ### Per-call options
 

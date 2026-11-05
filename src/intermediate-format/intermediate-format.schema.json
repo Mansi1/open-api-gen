@@ -331,6 +331,16 @@
           },
           "type": "array"
         },
+        "security": {
+          "description": "Effective security requirements: alternatives, each a list of scheme names that apply together (scopes dropped). The operation's own `security`, else the document's; empty WHEN the operation needs no credentials.",
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "type": "array"
+        },
         "success": {
           "description": "Status codes that count as success (2xx, or `default` when there is no 2xx).",
           "items": {
@@ -349,7 +359,8 @@
         "path",
         "parameters",
         "responses",
-        "success"
+        "success",
+        "security"
       ],
       "type": "object"
     },
@@ -494,6 +505,80 @@
         "boolean",
         "null"
       ]
+    },
+    "SecurityScheme": {
+      "anyOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "in": {
+              "enum": [
+                "header",
+                "query",
+                "cookie"
+              ],
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "type": {
+              "const": "apiKey",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "in",
+            "name"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "scheme": {
+              "type": "string"
+            },
+            "type": {
+              "const": "http",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "scheme"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "type": {
+              "enum": [
+                "oauth2",
+                "openIdConnect",
+                "mutualTLS"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        }
+      ],
+      "description": "An OpenAPI Security Scheme Object, reduced to what a client needs to send credentials."
     },
     "Server": {
       "additionalProperties": false,
@@ -1034,6 +1119,13 @@
       "const": 1,
       "type": "number"
     },
+    "securitySchemes": {
+      "additionalProperties": {
+        "$ref": "#/definitions/SecurityScheme"
+      },
+      "description": "`components.securitySchemes` by name, references resolved; `auth` credentials of the generated client are keyed by these names.",
+      "type": "object"
+    },
     "servers": {
       "description": "The document's top-level `servers`, in order; the first one is the generated client's default base URL. VERIFIED: an absent or empty list means one server with url `/` (spec/openapi-3.1.2.md:328); the runtime applies that default.",
       "items": {
@@ -1085,6 +1177,7 @@
     "intermediateFormatVersion",
     "source",
     "servers",
+    "securitySchemes",
     "declarations",
     "services",
     "hooks",

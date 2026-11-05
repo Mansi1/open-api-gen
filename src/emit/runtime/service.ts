@@ -63,6 +63,8 @@ export type SendRequest = {
   lossless: boolean;
   /** The caller's per-call options; a custom `send` may honor or ignore them. */
   options?: RequestOptions;
+  /** Security requirement alternatives, each a list of scheme names that apply together; absent WHEN none apply. */
+  security?: string[][];
 };
 
 /** Sends one request and resolves with the parsed response body; throws for unsuccessful responses. */
@@ -91,6 +93,7 @@ export type OperationDescriptor = {
   requestTransformer?: Transformer;
   responseValidator?: Validator;
   responseTransformer?: Transformer;
+  security?: string[][];
 };
 
 /** Generated parameter interfaces have no index signature, so the arguments are typed as plain objects. */
@@ -151,6 +154,9 @@ export async function callOperation(
   }
   if (options !== undefined) {
     request.options = options;
+  }
+  if (operation.security !== undefined) {
+    request.security = operation.security;
   }
   if (operation.requestContentType !== undefined) {
     request.requestContentType = operation.requestContentType;

@@ -43,6 +43,9 @@ beforeAll(() => {
         await Bun.sleep(300);
         return json(wirePetText);
       }
+      if (url.pathname.startsWith("/secure/")) {
+        return new Response(null, { status: 204 });
+      }
       if (url.pathname === "/things/missing") {
         return json('{"code":"missing"}', 404);
       }
@@ -394,6 +397,96 @@ export async function use(): Promise<void> {
 }
 `;
     expect(typeCheck(files, "errors-types", { "usage.ts": usage })).toEqual([]);
+  });
+});
+
+describe("auth from security schemes", () => {
+  test("each operation sends the credentials its requirements name: inherited, none, AND, OR, optional, custom scheme", async () => {
+    const { client } = await generateClient("test/fixtures/security-3.1.yaml", "auth-live");
+    let token: string | undefined = "t1";
+    const api = client.createClient({
+      baseUrl,
+      auth: {
+        bearerAuth: async () => token,
+        apiKeyHeader: "header-key",
+        apiKeyQuery: "query key",
+        apiKeyCookie: "s1",
+        oauth: "oauth-token",
+        tokenAuth: "abc",
+      },
+    });
+
+    await api.secure.whoAmI();
+    expect(lastRequest().headers.authorization).toBe("Bearer t1");
+    token = undefined;
+    await api.secure.whoAmI();
+    expect(lastRequest().headers.authorization).toBeUndefined();
+
+    await api.secure.getPublic();
+    expect(lastRequest().headers.authorization).toBeUndefined();
+
+    await api.secure.getWithBothKeys();
+    expect(lastRequest()).toMatchObject({ path: "/secure/keys", query: "?api_key=query%20key" });
+    expect(lastRequest().headers["x-api-key"]).toBe("header-key");
+
+    // OR: basic is first but has no credential, so the session cookie is sent.
+    await api.secure.getWithEither();
+    expect(lastRequest().headers.cookie).toBe("session=s1");
+    expect(lastRequest().headers.authorization).toBeUndefined();
+
+    // Optional ({} first): a configured OAuth token is still sent.
+    await api.secure.getOptional();
+    expect(lastRequest().headers.authorization).toBe("Bearer oauth-token");
+
+    await api.secure.getWithCustomScheme();
+    expect(lastRequest().headers.authorization).toBe("Token abc");
+
+    // A per-call header wins over auth.
+    token = "t2";
+    await api.secure.whoAmI({ headers: { authorization: "Bearer override" } });
+    expect(lastRequest().headers.authorization).toBe("Bearer override");
+  });
+
+  test("basic credentials are UTF-8 base64; mutual TLS needs no credential; an undefined scheme warns and sends nothing", async () => {
+    const { client } = await generateClient("test/fixtures/security-3.1.yaml", "auth-basic");
+    const api = client.createClient({ baseUrl, auth: { basicAuth: { username: "ada", password: "pä" }, apiKeyCookie: "s1" } });
+    await api.secure.getWithEither();
+    expect(lastRequest().headers.authorization).toBe(`Basic ${Buffer.from("ada:pä", "utf8").toString("base64")}`);
+    expect(lastRequest().headers.cookie).toBeUndefined();
+
+    // tokenAuth has no credential; the mutual TLS alternative is satisfied without one and adds no header.
+    await api.secure.getWithCustomScheme();
+    expect(lastRequest().headers.authorization).toBeUndefined();
+
+    await api.secure.getWithUndefinedScheme();
+    expect(lastRequest().headers.authorization).toBeUndefined();
+    const intermediateFormat = await buildIntermediateFormat(await loadConfig(undefined, { input: "test/fixtures/security-3.1.yaml", output: "out" }));
+    expect(intermediateFormat.warnings).toContainEqual({ pointer: "/paths/~1secure~1undefined/get", message: 'security requirement names undefined scheme "nope"; alternatives naming it are ignored here and everywhere else' });
+    const operations = intermediateFormat.services[0]!.operations;
+    expect(Object.fromEntries(operations.map((operation) => [operation.operationId, operation.security]))).toEqual({
+      whoAmI: [["bearerAuth"]],
+      getPublic: [],
+      getWithBothKeys: [["apiKeyHeader", "apiKeyQuery"]],
+      getWithEither: [["basicAuth"], ["apiKeyCookie"]],
+      getOptional: [[], ["oauth"]],
+      getWithCustomScheme: [["tokenAuth"], ["mtls"]],
+      getWithUndefinedScheme: [],
+    });
+  });
+
+  test("ApiAuth is typed per scheme: basic takes username and password, unknown scheme names do not compile", async () => {
+    const { files } = await generateClient("test/fixtures/security-3.1.yaml", "auth-types");
+    const usage = `import { createClient, type ApiAuth } from './index.js';
+const auth: ApiAuth = { bearerAuth: async () => 'token', basicAuth: { username: 'ada', password: 'secret' }, apiKeyQuery: () => undefined };
+export const api = createClient({ baseUrl: 'http://localhost', auth });
+// @ts-expect-error basic needs username and password
+export const wrongBasic = createClient({ auth: { basicAuth: 'secret' } });
+// @ts-expect-error no such security scheme
+export const unknownScheme = createClient({ auth: { nope: 'x' } });
+// @ts-expect-error mutual TLS takes no credential
+export const mutualTls = createClient({ auth: { mtls: 'x' } });
+`;
+    expect(typeCheck(files, "auth-types", { "usage.ts": usage })).toEqual([]);
   });
 });
 

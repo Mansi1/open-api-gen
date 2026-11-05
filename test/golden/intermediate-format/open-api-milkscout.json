@@ -25,5 +25,10 @@
   ],
   "transformed": 56,
   "runtime": 137,
-  "warnings": []
+  "warnings": [
+    {
+      "pointer": "/paths/~1offer~1{offer}/get",
+      "message": "security requirement names undefined scheme \"oauth2\"; alternatives naming it are ignored here and everywhere else"
+    }
+  ]
 }

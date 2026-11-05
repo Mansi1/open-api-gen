@@ -1,0 +1,79 @@
+openapi: 3.1.1
+info:
+  title: Security
+  version: 1.0.0
+security:
+  - bearerAuth: []
+paths:
+  /secure/whoami:
+    get:
+      operationId: whoAmI
+      tags: [secure]
+      responses:
+        "204": { description: Inherits the document's bearer requirement }
+  /secure/public:
+    get:
+      operationId: getPublic
+      tags: [secure]
+      security: []
+      responses:
+        "204": { description: No credentials }
+  /secure/keys:
+    get:
+      operationId: getWithBothKeys
+      tags: [secure]
+      security:
+        - apiKeyHeader: []
+          apiKeyQuery: []
+      responses:
+        "204": { description: Both keys together }
+  /secure/either:
+    get:
+      operationId: getWithEither
+      tags: [secure]
+      security:
+        - basicAuth: []
+        - apiKeyCookie: []
+      responses:
+        "204": { description: Basic or a session cookie }
+  /secure/optional:
+    get:
+      operationId: getOptional
+      tags: [secure]
+      security:
+        - {}
+        - oauth: [read]
+      responses:
+        "204": { description: Anonymous or with an OAuth token }
+  /secure/token:
+    get:
+      operationId: getWithCustomScheme
+      tags: [secure]
+      security:
+        - tokenAuth: []
+        - mtls: []
+      responses:
+        "204": { description: "A custom HTTP scheme, or mutual TLS" }
+  /secure/undefined:
+    get:
+      operationId: getWithUndefinedScheme
+      tags: [secure]
+      security:
+        - nope: []
+      responses:
+        "204": { description: Names a scheme that does not exist }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: Bearer, bearerFormat: JWT, description: A JWT from the login endpoint }
+    basicAuth: { type: http, scheme: basic }
+    tokenAuth: { type: http, scheme: token }
+    apiKeyHeader: { type: apiKey, in: header, name: X-API-Key }
+    apiKeyQuery: { type: apiKey, in: query, name: api_key }
+    apiKeyCookie: { type: apiKey, in: cookie, name: session }
+    oauth:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://auth.example.com/token
+          scopes: { read: Read access }
+    mtls: { type: mutualTLS }

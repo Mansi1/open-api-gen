@@ -42,9 +42,9 @@ function renderIndex(intermediateFormat: IntermediateFormat): string {
   }
   // Explicit exports win over `export *`, so a schema named like a runtime export stays reachable only through its own file.
   lines.push(
-    "export { createClient, isApiError, servers, type ApiClient, type ApiErrors } from './client.js';",
+    "export { createClient, isApiError, securitySchemes, servers, type ApiAuth, type ApiClient, type ApiErrors } from './client.js';",
     "export { serverUrl, type ClientOptions, type Server, type ServerVariable } from './runtime/client.js';",
-    "export { createFetchSend, ApiError, type FetchSendOptions, type Middleware } from './runtime/fetch-send.js';",
+    "export { createFetchSend, ApiError, type AuthCredentials, type BasicCredentials, type Credential, type FetchSendOptions, type Middleware, type SecurityScheme } from './runtime/fetch-send.js';",
     "export { ResponseValidationError, type RequestOptions, type RetryOptions, type Send, type SendRequest, type ServiceConfig } from './runtime/service.js';",
     "export { TransformError } from './runtime/transform.js';",
     "export type { Issue } from './runtime/validation.js';",
