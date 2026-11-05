@@ -188,4 +188,6 @@ export type Operation = {
    * The operation's own `security`, else the document's; empty WHEN the operation needs no credentials.
    */
   security: string[][];
+  /** The operation's own `servers`, else its path item's; absent WHEN neither declares any, so the client's base URL applies. */
+  servers?: Server[];
 };

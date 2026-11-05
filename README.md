@@ -111,10 +111,13 @@ A credential is a value or a function, which may be async and is called before e
 
 The client does not obtain tokens: running an OAuth flow and refreshing tokens is up to your credential function. A requirement naming a scheme the document does not define produces one warning and is ignored.
 
+An operation or path item with its own `servers` uses the first of them instead of the client's `baseUrl`, as OpenAPI specifies. In the GitHub spec, release asset uploads go to `https://uploads.github.com`; in the Stripe spec, file uploads go to `https://files.stripe.com/`. A relative operation server such as `/legacy` is relative to where the document is served, which the client cannot know, so it resolves against the origin of the client's `baseUrl`. To send such an operation elsewhere, e.g. to a staging host, pass `baseUrl` per call.
+
 ### Per-call options
 
 | Option | Meaning |
 |---|---|
+| `baseUrl` | Prefix for this call instead of the client's `baseUrl` and the operation's own server |
 | `signal` | An `AbortSignal` that cancels the call, including retries and their waits |
 | `timeout` | Overrides the client's timeout for this call |
 | `headers` | Extra headers; they win over the client's headers and the operation's header parameters |

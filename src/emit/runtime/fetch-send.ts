@@ -12,6 +12,29 @@ export type Middleware = {
   onResponse?: (response: Response, request: Request, details: SendRequest) => Response | void | Promise<Response | void>;
 };
 
+/** An OpenAPI Server Object; `url` may hold `{variable}` templates that `variables` defines. */
+export type Server = { url: string; description?: string; variables?: Record<string, ServerVariable> };
+
+export type ServerVariable = { default: string; enum?: string[]; description?: string };
+
+/**
+ * A server's URL with its `{variable}` templates filled from `variables`, each falling back to its default.
+ * Throws a TypeError for a value outside the variable's `enum` or a template without value or default.
+ */
+export function serverUrl(server: Server, variables: Record<string, string> = {}): string {
+  return server.url.replace(/\{([^}]+)\}/g, (_template, name: string) => {
+    const definition = server.variables?.[name];
+    const value = variables[name] ?? definition?.default;
+    if (value === undefined) {
+      throw new TypeError(`server ${server.url}: no value for variable "${name}"`);
+    }
+    if (definition?.enum !== undefined && !definition.enum.includes(value)) {
+      throw new TypeError(`server ${server.url}: variable "${name}" must be one of ${definition.enum.join(", ")}, got "${value}"`);
+    }
+    return value;
+  });
+}
+
 /** An OpenAPI security scheme as the generated `securitySchemes` lists it. */
 export type SecurityScheme =
   | { type: "apiKey"; in: "header" | "query" | "cookie"; name: string; description?: string }
@@ -94,7 +117,7 @@ export function createFetchSend(options: FetchSendOptions): Send {
   const fetchFunction = options.fetch ?? globalThis.fetch;
   const middleware = options.middleware ?? [];
   return async <Result>(request: SendRequest): Promise<Result> => {
-    const url = buildUrl(options.baseUrl, request);
+    const url = buildUrl(baseUrlFor(options.baseUrl, request), request);
     const callOptions = request.options ?? {};
     const retry = resolveRetry(callOptions.retry ?? options.retry);
     const retriesAllowed = retry.methods.includes(request.method.toUpperCase()) ? retry.retries : 0;
@@ -327,6 +350,26 @@ function wait(milliseconds: number, signal: AbortSignal | undefined): Promise<vo
     }, milliseconds);
     signal?.addEventListener("abort", onAbort, { once: true });
   });
+}
+
+/**
+ * The per-call baseUrl, else the operation's own server, else the client's baseUrl. A relative operation server
+ * (e.g. `/v2`) is relative to where the document is served, which the client cannot know; the client's baseUrl
+ * stands in for that location, so it resolves against the baseUrl's origin when the baseUrl is absolute.
+ */
+function baseUrlFor(clientBaseUrl: string, request: SendRequest): string {
+  if (request.options?.baseUrl !== undefined) {
+    return request.options.baseUrl;
+  }
+  if (request.server === undefined) {
+    return clientBaseUrl;
+  }
+  const operationServerUrl = serverUrl(request.server);
+  const isAbsolute = /^[A-Za-z][A-Za-z0-9+.-]*:/.test(operationServerUrl);
+  if (isAbsolute || !/^[A-Za-z][A-Za-z0-9+.-]*:/.test(clientBaseUrl)) {
+    return operationServerUrl;
+  }
+  return new URL(operationServerUrl, clientBaseUrl).toString();
 }
 
 function styleOf(request: SendRequest, location: ParameterLocation, name: string): ParameterStyle {

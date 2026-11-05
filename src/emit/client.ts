@@ -1,9 +1,10 @@
 // Emits client.ts: the document's servers and createClient, which builds every service with one shared configuration.
 // The logic lives in runtime/client.ts; this file only lists the servers and services of this API.
 // VERIFIED: test/services.test.ts calls the generated createClient against a real Bun.serve server.
-import type { IntermediateFormat, SecurityScheme, Server } from "../intermediate-format/types.ts";
+import type { IntermediateFormat, SecurityScheme } from "../intermediate-format/types.ts";
 import { HEADER, importPath, type Files } from "./layout.ts";
 import { docComment, identifier, propertyKey, quote } from "./names.ts";
+import { renderServer } from "./servers.ts";
 import { servicePath } from "./services.ts";
 
 export const CLIENT_PATH = "client.ts";
@@ -11,28 +12,6 @@ const INDENT = "  ";
 
 export function emitClient(intermediateFormat: IntermediateFormat): Files {
   return new Map([[CLIENT_PATH, renderClient(intermediateFormat)]]);
-}
-
-function renderServer(server: Server): string {
-  const fields = [`url: ${quote(server.url)}`];
-  if (server.description !== undefined) {
-    fields.push(`description: ${quote(server.description)}`);
-  }
-  if (server.variables !== undefined) {
-    const variables: string[] = [];
-    for (const [variableName, variable] of Object.entries(server.variables)) {
-      const variableFields = [`default: ${quote(variable.default)}`];
-      if (variable.enum !== undefined) {
-        variableFields.push(`enum: [${variable.enum.map((value) => quote(value)).join(", ")}]`);
-      }
-      if (variable.description !== undefined) {
-        variableFields.push(`description: ${quote(variable.description)}`);
-      }
-      variables.push(`${propertyKey(variableName)}: { ${variableFields.join(", ")} }`);
-    }
-    fields.push(`variables: { ${variables.join(", ")} }`);
-  }
-  return `${INDENT}{ ${fields.join(", ")} },\n`;
 }
 
 function renderSecurityScheme(scheme: SecurityScheme): string {
@@ -92,7 +71,7 @@ function renderClient(intermediateFormat: IntermediateFormat): string {
     clientValueMembers.push(`${INDENT}${INDENT}${propertyKey(service.property)}: new ${className}(config),\n`);
   }
 
-  const servers = intermediateFormat.servers.map((server) => renderServer(server)).join("");
+  const servers = intermediateFormat.servers.map((server) => `${INDENT}${renderServer(server)},\n`).join("");
   const securitySchemes = Object.entries(intermediateFormat.securitySchemes)
     .map(([schemeName, scheme]) => `${INDENT}${propertyKey(schemeName)}: ${renderSecurityScheme(scheme)},\n`)
     .join("");

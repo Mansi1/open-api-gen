@@ -1,0 +1,40 @@
+openapi: 3.1.1
+info:
+  title: Servers
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /files:
+    servers:
+      - url: https://uploads.example.com/{version}
+        variables:
+          version:
+            default: v2
+    get:
+      operationId: listFiles
+      tags: [files]
+      responses:
+        "204": { description: Path-level server }
+    post:
+      operationId: uploadFile
+      tags: [files]
+      servers:
+        - url: https://bulk.example.com
+        - url: https://bulk-backup.example.com
+      responses:
+        "204": { description: Operation-level server wins over the path's }
+  /status:
+    get:
+      operationId: getStatus
+      tags: [files]
+      servers:
+        - url: /legacy
+      responses:
+        "204": { description: Relative operation server }
+  /ping:
+    get:
+      operationId: ping
+      tags: [files]
+      responses:
+        "204": { description: The client's base URL }

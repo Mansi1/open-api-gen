@@ -45,3 +45,5 @@ Wrap: EVERY lead → test | .agents/VERIFY.py rule | one MEMORY line with BC, th
 2026-11-05T22:58:47Z s=f7b31668 DONE fp=d47ec9da94af cov=77.2% paths=ARCH.md,README.md,input/open-api-gen.config.json,input/smoke.ts(+29)
 2026-11-05T22:58:47Z s=f7b31668 FINDING src/emit/runtime/fetch-send.ts:buildHeaders/applyAuth order learn=test: test/services.test.ts auth live test asserts a per-call authorization header wins over auth
 2026-11-05T22:58:47Z s=f7b31668 FINDING src/intermediate-format/normalize.ts:normalizeSecurity learn=test: golden test/golden/intermediate-format/open-api-milkscout.json pins exactly one such warning
+2026-11-05T23:04:30Z s=f7b31668 DONE fp=c998999bb76e cov=77.0% paths=ARCH.md,README.md,input/open-api-gen.config.json,input/smoke.ts(+31)
+2026-11-05T23:04:30Z s=f7b31668 FINDING README.md operation servers paragraph (B evidence) learn=none: a doc example claim, not mechanically checkable

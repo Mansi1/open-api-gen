@@ -668,6 +668,7 @@ function normalizeOperation(context: NormalizeContext, input: OperationInput): O
 
   const { responses, success } = normalizeResponses(context, operation, pointer, typeBase);
   const security = normalizeSecurity(context, operation.security ?? context.document.security, pointer);
+  const servers = normalizeServers(operation.servers ?? input.pathItem.servers);
   return {
     name: camel(operationId),
     operationId,
@@ -682,6 +683,7 @@ function normalizeOperation(context: NormalizeContext, input: OperationInput): O
     responses,
     success,
     security,
+    ...(servers.length > 0 ? { servers } : {}),
   };
 }
 

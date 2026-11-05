@@ -10,6 +10,7 @@ Small hand-written OpenAPI documents. Each one exists to exercise a specific set
 | `features-3.2.yaml` | yes | `query` method, `in: querystring`, `itemSchema` streaming (`application/jsonl`), `additionalOperations` (`PURGE`) |
 | `errors-3.1.yaml` | yes | typed error responses (404 and 422 with distinct bodies, `default`), schemas named like runtime exports (`ApiError`, `RequestOptions`, `ServiceConfig`) |
 | `security-3.1.yaml` | yes | every security scheme kind (http bearer, basic and custom, apiKey in header, query and cookie, oauth2, mutualTLS), document-level requirement, `security: []`, AND and OR requirements, optional `{}`, an undefined scheme name |
+| `servers-3.1.yaml` | yes | path-level `servers` with a variable, operation-level `servers` overriding them, a relative operation server, an operation without its own servers |
 | `collision-3.1.yaml` | yes | `user_id` and `userId` collide under camelCase |
 | `invalid-3.1.yaml` | no | Schema Object with `type: 42` |
 | `swagger-2.0.json` | no (unsupported) | Swagger 2.0 rejection |

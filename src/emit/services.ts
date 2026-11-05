@@ -7,6 +7,7 @@ import { CodecRenderer } from "./codecs.ts";
 import { TypeImports, TypeRenderer } from "./interfaces.ts";
 import { HEADER, importPath, type Files } from "./layout.ts";
 import { docComment, identifier, propertyKey, quote } from "./names.ts";
+import { renderServer } from "./servers.ts";
 import { ValidatorRenderer } from "./validators.ts";
 
 const INDENT = "    ";
@@ -156,6 +157,10 @@ class ServiceFile {
     }
     fields.push(`responseContentTypes: [${[...responseContentTypes].map(quote).join(", ")}]`);
     fields.push(`parameterStyles: ${this.renderParameterStyles(operation)}`);
+    // Only the first server is used: it is the operation's default, as the client's first server is the client's.
+    if (operation.servers !== undefined && operation.servers[0] !== undefined) {
+      fields.push(`server: ${renderServer(operation.servers[0])}`);
+    }
     if (operation.security.length > 0) {
       const alternatives = operation.security.map((schemeNames) => `[${schemeNames.map((schemeName) => quote(schemeName)).join(", ")}]`);
       fields.push(`security: [${alternatives.join(", ")}]`);

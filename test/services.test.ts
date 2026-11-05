@@ -43,6 +43,9 @@ beforeAll(() => {
         await Bun.sleep(300);
         return json(wirePetText);
       }
+      if (url.pathname === "/legacy/status") {
+        return new Response(null, { status: 204 });
+      }
       if (url.pathname.startsWith("/secure/")) {
         return new Response(null, { status: 204 });
       }
@@ -487,6 +490,35 @@ export const unknownScheme = createClient({ auth: { nope: 'x' } });
 export const mutualTls = createClient({ auth: { mtls: 'x' } });
 `;
     expect(typeCheck(files, "auth-types", { "usage.ts": usage })).toEqual([]);
+  });
+});
+
+describe("operation and path servers", () => {
+  test("an operation's own server, else its path's, replaces the client baseUrl; a per-call baseUrl wins over both", async () => {
+    const { client } = await generateClient("test/fixtures/servers-3.1.yaml", "servers-operation");
+    const fetchedUrls: string[] = [];
+    const recordingFetch = async (request: Request) => {
+      fetchedUrls.push(request.url);
+      return new Response(null, { status: 204 });
+    };
+    const api = client.createClient({ fetch: recordingFetch });
+    await api.files.listFiles();
+    await api.files.uploadFile();
+    await api.files.ping();
+    await api.files.listFiles({ baseUrl: "https://staging.example.com" });
+    expect(fetchedUrls).toEqual([
+      "https://uploads.example.com/v2/files",
+      "https://bulk.example.com/files",
+      "https://api.example.com/ping",
+      "https://staging.example.com/files",
+    ]);
+  });
+
+  test("a relative operation server resolves against the origin of the client baseUrl", async () => {
+    const { client } = await generateClient("test/fixtures/servers-3.1.yaml", "servers-relative");
+    const api = client.createClient({ baseUrl: `${baseUrl}/api/v1` });
+    await api.files.getStatus();
+    expect(lastRequest().path).toBe("/legacy/status");
   });
 });
 

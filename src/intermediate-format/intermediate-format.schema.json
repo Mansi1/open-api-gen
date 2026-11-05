@@ -341,6 +341,13 @@
           },
           "type": "array"
         },
+        "servers": {
+          "description": "The operation's own `servers`, else its path item's; absent WHEN neither declares any, so the client's base URL applies.",
+          "items": {
+            "$ref": "#/definitions/Server"
+          },
+          "type": "array"
+        },
         "success": {
           "description": "Status codes that count as success (2xx, or `default` when there is no 2xx).",
           "items": {

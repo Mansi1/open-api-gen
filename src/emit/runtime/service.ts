@@ -2,6 +2,7 @@
 // modules, and it must run unchanged in browsers, Node.js and Bun.
 // VERIFIED: test/services.test.ts covers all four validate × transform combinations.
 import { settleUnsafeIntegers } from "./json.js";
+import type { Server } from "./fetch-send.js";
 import type { Transformer } from "./transform.js";
 import { validate, type Issue, type Validator } from "./validation.js";
 
@@ -24,6 +25,8 @@ export type RetryOptions = {
 
 /** Options for one call, passed as the last argument of every generated method. */
 export type RequestOptions = {
+  /** Prefix for this call's path instead of the client's baseUrl and the operation's own server, e.g. a staging host. */
+  baseUrl?: string;
   /** Cancels the request, including retries and their waits. */
   signal?: AbortSignal;
   /** Milliseconds per attempt before it fails with a TimeoutError; overrides the client's timeout. */
@@ -65,6 +68,8 @@ export type SendRequest = {
   options?: RequestOptions;
   /** Security requirement alternatives, each a list of scheme names that apply together; absent WHEN none apply. */
   security?: string[][];
+  /** The operation's own server (OpenAPI operation or path item `servers`); it replaces the client's baseUrl. */
+  server?: Server;
 };
 
 /** Sends one request and resolves with the parsed response body; throws for unsuccessful responses. */
@@ -94,6 +99,7 @@ export type OperationDescriptor = {
   responseValidator?: Validator;
   responseTransformer?: Transformer;
   security?: string[][];
+  server?: Server;
 };
 
 /** Generated parameter interfaces have no index signature, so the arguments are typed as plain objects. */
@@ -157,6 +163,9 @@ export async function callOperation(
   }
   if (operation.security !== undefined) {
     request.security = operation.security;
+  }
+  if (operation.server !== undefined) {
+    request.server = operation.server;
   }
   if (operation.requestContentType !== undefined) {
     request.requestContentType = operation.requestContentType;

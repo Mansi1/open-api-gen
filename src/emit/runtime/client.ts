@@ -1,13 +1,10 @@
 // Copied verbatim into every generated client as runtime/client.ts. It imports only its sibling runtime
 // modules, and it must run unchanged in browsers, Node.js and Bun.
 // VERIFIED: test/services.test.ts builds generated clients with createClient against a real Bun.serve server.
-import { createFetchSend, type AuthCredentials, type FetchSendOptions, type SecurityScheme } from "./fetch-send.js";
+import { createFetchSend, serverUrl, type AuthCredentials, type FetchSendOptions, type SecurityScheme, type Server } from "./fetch-send.js";
 import type { Send, ServiceConfig } from "./service.js";
 
-/** An OpenAPI Server Object; `url` may hold `{variable}` templates that `variables` defines. */
-export type Server = { url: string; description?: string; variables?: Record<string, ServerVariable> };
-
-export type ServerVariable = { default: string; enum?: string[]; description?: string };
+export { serverUrl, type Server, type ServerVariable } from "./fetch-send.js";
 
 /** Settings for the generated `createClient`: createFetchSend's options plus the service options; `Auth` is the generated ApiAuth. */
 export type ClientOptions<Transform extends boolean = false, Auth extends AuthCredentials = AuthCredentials> = Omit<FetchSendOptions, "baseUrl" | "auth" | "securitySchemes"> & {
@@ -22,24 +19,6 @@ export type ClientOptions<Transform extends boolean = false, Auth extends AuthCr
   /** Convert between wire values and App values: dates, int64, renamed properties, user hooks. */
   transform?: Transform;
 };
-
-/**
- * A server's URL with its `{variable}` templates filled from `variables`, each falling back to its default.
- * Throws a TypeError for a value outside the variable's `enum` or a template without value or default.
- */
-export function serverUrl(server: Server, variables: Record<string, string> = {}): string {
-  return server.url.replace(/\{([^}]+)\}/g, (_template, name: string) => {
-    const definition = server.variables?.[name];
-    const value = variables[name] ?? definition?.default;
-    if (value === undefined) {
-      throw new TypeError(`server ${server.url}: no value for variable "${name}"`);
-    }
-    if (definition?.enum !== undefined && !definition.enum.includes(value)) {
-      throw new TypeError(`server ${server.url}: variable "${name}" must be one of ${definition.enum.join(", ")}, got "${value}"`);
-    }
-    return value;
-  });
-}
 
 /** The service configuration createClient shares between all services of one client. */
 export function createServiceConfig<Transform extends boolean>(
