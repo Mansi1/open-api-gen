@@ -79,6 +79,8 @@ export type ServiceConfig<Transform extends boolean> = {
   send: Send;
   /** Check every response body against its schema and throw ResponseValidationError on a mismatch. */
   validate?: boolean;
+  /** Check every request body against its schema before sending and throw RequestValidationError on a mismatch. */
+  validateRequest?: boolean;
   /** Convert between wire values and App values: dates, int64, renamed properties, user hooks. */
   transform?: Transform;
 };
@@ -96,6 +98,7 @@ export type OperationDescriptor = {
   /** Some success response has no body (e.g. 204 next to a 200 with one); a missing body is then not validated. */
   emptyBodyAllowed?: boolean;
   requestTransformer?: Transformer;
+  requestValidator?: Validator;
   responseValidator?: Validator;
   responseTransformer?: Transformer;
   security?: string[][];
@@ -116,6 +119,13 @@ function asRecord(value: object | undefined): Record<string, unknown> {
   return (value ?? {}) as Record<string, unknown>;
 }
 
+/** The first five issues, one per line, for an error message. */
+function listIssues(issues: Issue[]): string {
+  const listed = issues.slice(0, 5).map((issue) => `  ${issue.path === "" ? "(body)" : issue.path}: ${issue.message}`);
+  const more = issues.length > 5 ? `\n  ... and ${issues.length - 5} more` : "";
+  return `${listed.join("\n")}${more}`;
+}
+
 /** A response body that does not match its schema; thrown only by clients created with `validate: true`. */
 export class ResponseValidationError extends Error {
   constructor(
@@ -123,10 +133,20 @@ export class ResponseValidationError extends Error {
     readonly issues: Issue[],
     readonly body: unknown,
   ) {
-    const listed = issues.slice(0, 5).map((issue) => `  ${issue.path === "" ? "(body)" : issue.path}: ${issue.message}`);
-    const more = issues.length > 5 ? `\n  ... and ${issues.length - 5} more` : "";
-    super(`response of ${operationId} does not match its schema:\n${listed.join("\n")}${more}`);
+    super(`response of ${operationId} does not match its schema:\n${listIssues(issues)}`);
     this.name = "ResponseValidationError";
+  }
+}
+
+/** A request body that does not match its schema, found before sending; thrown only by clients created with `validateRequest: true`. */
+export class RequestValidationError extends Error {
+  constructor(
+    readonly operationId: string,
+    readonly issues: Issue[],
+    readonly body: unknown,
+  ) {
+    super(`request of ${operationId} does not match its schema:\n${listIssues(issues)}`);
+    this.name = "RequestValidationError";
   }
 }
 
@@ -141,6 +161,13 @@ export async function callOperation(
   let body = operationArguments.body;
   if (transform && operation.requestTransformer !== undefined && body !== undefined) {
     body = operation.requestTransformer.encode(body, "");
+  }
+  // Checked in wire form, after encoding: that is what the schema describes and what the server receives.
+  if (config.validateRequest === true && operation.requestValidator !== undefined && body !== undefined) {
+    const issues = validate(operation.requestValidator, body, "request");
+    if (issues.length > 0) {
+      throw new RequestValidationError(operation.operationId, issues, body);
+    }
   }
   const request: SendRequest = {
     method: operation.method,
@@ -182,7 +209,7 @@ export async function callOperation(
       return undefined;
     }
     if (config.validate === true && operation.responseValidator !== undefined) {
-      const issues = validate(operation.responseValidator, value);
+      const issues = validate(operation.responseValidator, value, "response");
       if (issues.length > 0) {
         throw new ResponseValidationError(operation.operationId, issues, settleUnsafeIntegers(value));
       }

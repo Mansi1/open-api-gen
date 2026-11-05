@@ -16,6 +16,8 @@ export type ClientOptions<Transform extends boolean = false, Auth extends AuthCr
   send?: Send;
   /** Check every response body against its schema and throw ResponseValidationError on a mismatch. */
   validate?: boolean;
+  /** Check every request body against its schema before sending and throw RequestValidationError on a mismatch. */
+  validateRequest?: boolean;
   /** Convert between wire values and App values: dates, int64, renamed properties, user hooks. */
   transform?: Transform;
 };
@@ -26,12 +28,15 @@ export function createServiceConfig<Transform extends boolean>(
   servers: Server[],
   securitySchemes: Record<string, SecurityScheme> = {},
 ): ServiceConfig<Transform> {
-  const { send, validate, transform, baseUrl, ...fetchOptions } = options;
+  const { send, validate, validateRequest, transform, baseUrl, ...fetchOptions } = options;
   // OpenAPI: without servers, the default server URL is `/`.
   const defaultServer: Server = servers[0] ?? { url: "/" };
   const config: ServiceConfig<Transform> = { send: send ?? createFetchSend({ ...fetchOptions, securitySchemes, baseUrl: baseUrl ?? serverUrl(defaultServer) }) };
   if (validate !== undefined) {
     config.validate = validate;
+  }
+  if (validateRequest !== undefined) {
+    config.validateRequest = validateRequest;
   }
   if (transform !== undefined) {
     config.transform = transform;

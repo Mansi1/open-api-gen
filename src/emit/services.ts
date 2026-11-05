@@ -172,8 +172,12 @@ class ServiceFile {
     }
     if (operation.requestBody !== undefined) {
       fields.push(`requestContentType: ${quote(operation.requestBody.contentType)}`);
-      if (operation.requestBody.type !== undefined && this.codecs.needsTransform(operation.requestBody.type)) {
-        fields.push(`requestTransformer: ${this.codecs.render(operation.requestBody.type)}`);
+      const requestType = operation.requestBody.type;
+      if (requestType !== undefined && this.codecs.needsTransform(requestType)) {
+        fields.push(`requestTransformer: ${this.codecs.render(requestType)}`);
+      }
+      if (requestType !== undefined && requestType.kind !== "binary" && requestType.kind !== "unknown") {
+        fields.push(`requestValidator: ${this.validators.render(requestType)}`);
       }
     }
     if (operation.querystring !== undefined) {

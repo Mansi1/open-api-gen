@@ -248,7 +248,7 @@ export function union(members: UnionMember[], discriminator?: UnionDiscriminator
       if (tagged !== undefined) {
         return tagged.decode(wire, path);
       }
-      const member = members.find((candidate) => validate(candidate.validator, wire).length === 0);
+      const member = members.find((candidate) => validate(candidate.validator, wire, "response").length === 0);
       return (member?.transformer ?? identity).decode(wire, path);
     },
     encode(app, path) {
@@ -259,7 +259,7 @@ export function union(members: UnionMember[], discriminator?: UnionDiscriminator
       for (const member of members) {
         try {
           const encoded = member.transformer.encode(app, path);
-          if (validate(member.validator, encoded).length === 0) {
+          if (validate(member.validator, encoded, "request").length === 0) {
             return encoded;
           }
         } catch {

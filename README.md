@@ -75,6 +75,7 @@ Each operation is a method named after its `operationId`. Its arguments come in 
 | `fetch` | Your own fetch function (default: the global `fetch`); it receives a standard `Request` |
 | `send` | Your own transport instead of `createFetchSend`; the transport options above then do nothing |
 | `validate` | Check every response body against its schema and throw `ResponseValidationError` with a list of `{ path, message }` issues (JSON Pointer paths) |
+| `validateRequest` | Check every request body against its schema before sending and throw `RequestValidationError`; nothing is sent then. With `transform`, the body is checked after conversion to wire form |
 | `transform` | Convert request bodies from App to wire form before sending, and response bodies from wire to App form after receiving. TypeScript infers `transform: true` from the call and switches every method to App types |
 
 `servers` holds the document's servers, and `serverUrl(server, variables)` fills a server's `{variable}` templates, checking each value against the variable's `enum`:
@@ -154,6 +155,7 @@ const api = createClient({
 
 - `ApiError`: the answer's status is outside 2xx. It carries `status`, the parsed `body`, the `Response` and the `operationId`.
 - `ResponseValidationError`: only with `validate: true`. It carries `operationId`, `issues` and `body`.
+- `RequestValidationError`: only with `validateRequest: true`, thrown before the request is sent. It carries `operationId`, `issues` and the wire `body`.
 - `TimeoutError` (a `DOMException`): an attempt ran longer than `timeout`. Your own abort rejects with the signal's reason.
 - `TypeError`: a network failure, or a missing required path parameter.
 
@@ -243,13 +245,12 @@ Paths in the file are relative to the file. Every key is optional except `input`
 | 3.2 | the `query` method, `additionalOperations` (custom methods such as `PURGE`), `in: querystring`, streamed responses with `itemSchema` |
 | all | `allOf`, `oneOf` and `anyOf` with discriminators (explicit and implicit mapping), recursive schemas, maps, path-level parameters, every parameter style |
 
-Response validators check `type`, `enum`, `const`, `required`, `properties`, `additionalProperties`, `items`, `prefixItems`, the numeric, string and array bounds, `pattern`, `uniqueItems`, `allOf`, `anyOf` and `oneOf`. Formats are annotations, as in JSON Schema, except `date-time` and `date`, which are checked because the client converts them.
+Validators check `type`, `enum`, `const`, `required`, `properties`, `additionalProperties`, `items`, `prefixItems`, the numeric, string and array bounds, `pattern`, `uniqueItems`, `allOf`, `anyOf` and `oneOf`. Formats are annotations, as in JSON Schema, except `date-time` and `date`, which are checked because the client converts them. A required `readOnly` property is not required in a request body, and a required `writeOnly` property is not required in a response body. OpenAPI 3.0 specifies this; 3.1 and 3.2 leave it to the API, and the client applies the same rule. Request validation covers bodies; parameters are checked by their TypeScript types only.
 
 **Not supported:**
 
 - Swagger 2.0 (convert it to 3.x first).
 - `$ref` to other files or URLs.
-- Request validation.
 - Webhooks and callbacks.
 - JavaScript output.
 

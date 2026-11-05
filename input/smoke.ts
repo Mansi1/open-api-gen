@@ -3,7 +3,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
 import { Decimal } from "../../input/hooks/decimal.js";
-import { ApiError, createClient, createFetchSend, isApiError, ResponseValidationError, servers, StoreService, type Middleware } from "../clients/petstore-app/index.js";
+import { ApiError, createClient, createFetchSend, isApiError, RequestValidationError, ResponseValidationError, servers, StoreService, type Middleware } from "../clients/petstore-app/index.js";
 
 type Received = { method: string; url: string; body: string; contentType: string; apiKey: string };
 const received: Received[] = [];
@@ -108,6 +108,16 @@ try {
     timeoutError = error;
   }
   check(timeoutError instanceof Error && timeoutError.name === "TimeoutError", "a per-call timeout aborts a slow answer");
+
+  const checked = createClient({ baseUrl: `http://127.0.0.1:${port}`, validateRequest: true });
+  const sentBefore = received.length;
+  let requestError: unknown;
+  try {
+    await checked.store.placeOrder({ quantity: "two" } as never);
+  } catch (error) {
+    requestError = error;
+  }
+  check(requestError instanceof RequestValidationError && received.length === sentBefore, "validateRequest rejects an invalid body before sending");
 } finally {
   server.close();
 }

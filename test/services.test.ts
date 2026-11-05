@@ -43,6 +43,11 @@ beforeAll(() => {
         await Bun.sleep(300);
         return json(wirePetText);
       }
+      if (url.pathname === "/accounts" && request.method === "POST") {
+        // Answers like a real server: the id is assigned, the password is never sent back.
+        const sent = JSON.parse(recorded[recorded.length - 1]!.body) as { name: string };
+        return json(JSON.stringify({ id: 1, name: sent.name, created_at: "2026-01-02T03:04:05.000Z" }), 201);
+      }
       if (url.pathname === "/legacy/status") {
         return new Response(null, { status: 204 });
       }
@@ -519,6 +524,38 @@ describe("operation and path servers", () => {
     const api = client.createClient({ baseUrl: `${baseUrl}/api/v1` });
     await api.files.getStatus();
     expect(lastRequest().path).toBe("/legacy/status");
+  });
+});
+
+describe("request validation", () => {
+  test("an invalid body throws RequestValidationError before anything is sent; without validateRequest it is sent", async () => {
+    const { client } = await generateClient("test/fixtures/read-write-only-3.0.yaml", "request-validation");
+    const api = client.createClient({ baseUrl, validateRequest: true });
+    const before = requestsTo("/accounts").length;
+    const error = await api.accounts.createAccount({ name: "", password: 42 }).catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(client.RequestValidationError);
+    expect((error as { issues: unknown[] }).issues).toEqual([
+      { path: "/name", message: "must have at least 1 characters" },
+      { path: "/password", message: "must be a string, got number" },
+    ]);
+    expect((error as Error).message).toStartWith("request of createAccount does not match its schema:");
+    expect(requestsTo("/accounts").length).toBe(before);
+
+    const unchecked = client.createClient({ baseUrl });
+    await unchecked.accounts.createAccount({ name: "x", password: 42 });
+    expect(requestsTo("/accounts").length).toBe(before + 1);
+  });
+
+  test("required readOnly properties are not required in requests, required writeOnly properties not in responses", async () => {
+    const { client } = await generateClient("test/fixtures/read-write-only-3.0.yaml", "request-validation-read-write");
+    const api = client.createClient({ baseUrl, validateRequest: true, validate: true, transform: true });
+    const account = await api.accounts.createAccount({ name: "ada", password: "secret" });
+    expect(lastRequest().body).toBe('{"name":"ada","password":"secret"}');
+    expect(account).toEqual({ id: 1n, name: "ada", created_at: new Date("2026-01-02T03:04:05.000Z") });
+
+    // Checked in wire form after encoding: a Date and a bigint become a date-time string and an integer.
+    const missingName = await api.accounts.createAccount({ password: "secret", id: 5n, created_at: new Date("2026-01-02T03:04:05.000Z") }).catch((caught: unknown) => caught);
+    expect((missingName as { issues: unknown[] }).issues).toEqual([{ path: "/name", message: "is required" }]);
   });
 });
 

@@ -139,7 +139,10 @@ export class ValidatorRenderer {
   }
 
   private renderObject(node: Extract<TypeNode, { kind: "object" }>): string {
-    const rules = node.properties.map((property) => `${propertyKey(property.name)}: { required: ${property.required}, validator: ${this.render(property.type)} }`);
+    const rules = node.properties.map((property) => {
+      const flags = `${property.readOnly === true ? ", readOnly: true" : ""}${property.writeOnly === true ? ", writeOnly: true" : ""}`;
+      return `${propertyKey(property.name)}: { required: ${property.required}${flags}, validator: ${this.render(property.type)} }`;
+    });
     let additional: string;
     if (typeof node.additional === "boolean") {
       additional = String(node.additional);

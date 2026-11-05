@@ -6,7 +6,10 @@
 export type Issue = { path: string; message: string };
 
 /** Appends every issue of `value` to `issues`; `path` locates `value` inside the checked document. */
-export type Validator = (value: unknown, path: string, issues: Issue[]) => void;
+/** Which way a value travels: `required` skips readOnly properties in requests and writeOnly properties in responses. */
+export type Direction = "request" | "response";
+
+export type Validator = (value: unknown, path: string, issues: Issue[], direction?: Direction) => void;
 
 export type Constraints = {
   minimum?: number;
@@ -25,12 +28,16 @@ export type Constraints = {
   maxProperties?: number;
 };
 
-export type PropertyRule = { required: boolean; validator: Validator };
+/**
+ * `readOnly`/`writeOnly` mark properties only one side sends. OpenAPI 3.0 limits `required` on them to responses and
+ * requests respectively; 3.1 and 3.2 make them annotations a server may ignore, so the client applies the 3.0 rule to all.
+ */
+export type PropertyRule = { required: boolean; validator: Validator; readOnly?: boolean; writeOnly?: boolean };
 
 /** Runs a validator from the document root and returns every issue; an empty list means the value is valid. */
-export function validate(validator: Validator, value: unknown): Issue[] {
+export function validate(validator: Validator, value: unknown, direction: Direction = "response"): Issue[] {
   const issues: Issue[] = [];
-  validator(value, "", issues);
+  validator(value, "", issues, direction);
   return issues;
 }
 
@@ -228,19 +235,19 @@ function checkItems(items: unknown[], path: string, issues: Issue[], constraints
 }
 
 export function array(itemValidator: Validator, constraints: Constraints = {}): Validator {
-  return (value, path, issues) => {
+  return (value, path, issues, direction) => {
     if (!Array.isArray(value)) {
       issues.push({ path, message: `must be an array, got ${describe(value)}` });
       return;
     }
     checkItems(value, path, issues, constraints);
-    value.forEach((item, index) => itemValidator(item, childPath(path, index), issues));
+    value.forEach((item, index) => itemValidator(item, childPath(path, index), issues, direction));
   };
 }
 
 /** `rest`: a validator for items after the prefix, `false` = none allowed, `null` = anything allowed. */
 export function tuple(prefix: Validator[], rest: Validator | false | null, constraints: Constraints = {}): Validator {
-  return (value, path, issues) => {
+  return (value, path, issues, direction) => {
     if (!Array.isArray(value)) {
       issues.push({ path, message: `must be an array, got ${describe(value)}` });
       return;
@@ -249,11 +256,11 @@ export function tuple(prefix: Validator[], rest: Validator | false | null, const
     value.forEach((item, index) => {
       const itemPath = childPath(path, index);
       if (index < prefix.length) {
-        prefix[index]!(item, itemPath, issues);
+        prefix[index]!(item, itemPath, issues, direction);
       } else if (rest === false) {
         issues.push({ path: itemPath, message: `must have at most ${prefix.length} items` });
       } else if (rest !== null) {
-        rest(item, itemPath, issues);
+        rest(item, itemPath, issues, direction);
       }
     });
   };
@@ -261,7 +268,7 @@ export function tuple(prefix: Validator[], rest: Validator | false | null, const
 
 /** `additional`: a validator for undeclared properties, `false` = none allowed, `true` = anything allowed. */
 export function object(properties: Record<string, PropertyRule>, additional: Validator | boolean = true, constraints: Constraints = {}): Validator {
-  return (value, path, issues) => {
+  return (value, path, issues, direction) => {
     if (!isPlainObject(value)) {
       issues.push({ path, message: `must be an object, got ${describe(value)}` });
       return;
@@ -275,12 +282,14 @@ export function object(properties: Record<string, PropertyRule>, additional: Val
     }
     for (const [name, rule] of Object.entries(properties)) {
       if (!Object.hasOwn(value, name)) {
-        if (rule.required) {
+        const isRequest = direction === "request";
+        const sentByOtherSide = (isRequest && rule.readOnly === true) || (!isRequest && rule.writeOnly === true);
+        if (rule.required && !sentByOtherSide) {
           issues.push({ path: childPath(path, name), message: "is required" });
         }
         continue;
       }
-      rule.validator(value[name], childPath(path, name), issues);
+      rule.validator(value[name], childPath(path, name), issues, direction);
     }
     for (const key of keys) {
       if (Object.hasOwn(properties, key)) {
@@ -289,7 +298,7 @@ export function object(properties: Record<string, PropertyRule>, additional: Val
       if (additional === false) {
         issues.push({ path: childPath(path, key), message: "is not allowed" });
       } else if (additional !== true) {
-        additional(value[key], childPath(path, key), issues);
+        additional(value[key], childPath(path, key), issues, direction);
       }
     }
   };
@@ -298,23 +307,23 @@ export function object(properties: Record<string, PropertyRule>, additional: Val
 // ---------------------------------------------------------------- composition
 
 export function allOf(members: Validator[]): Validator {
-  return (value, path, issues) => {
+  return (value, path, issues, direction) => {
     for (const member of members) {
-      member(value, path, issues);
+      member(value, path, issues, direction);
     }
   };
 }
 
 /** Runs one member on its own and reports whether it accepted the value. */
-function accepts(member: Validator, value: unknown, path: string): { valid: boolean; issues: Issue[] } {
+function accepts(member: Validator, value: unknown, path: string, direction: Direction | undefined): { valid: boolean; issues: Issue[] } {
   const memberIssues: Issue[] = [];
-  member(value, path, memberIssues);
+  member(value, path, memberIssues, direction);
   return { valid: memberIssues.length === 0, issues: memberIssues };
 }
 
 export function anyOf(members: Validator[]): Validator {
-  return (value, path, issues) => {
-    const results = members.map((member) => accepts(member, value, path));
+  return (value, path, issues, direction) => {
+    const results = members.map((member) => accepts(member, value, path, direction));
     if (results.some((result) => result.valid)) {
       return;
     }
@@ -327,7 +336,7 @@ export function anyOf(members: Validator[]): Validator {
 export type Discriminator = { property: string; mapping: Record<string, Validator> };
 
 export function oneOf(members: Validator[], discriminator?: Discriminator): Validator {
-  return (value, path, issues) => {
+  return (value, path, issues, direction) => {
     if (discriminator !== undefined && isPlainObject(value)) {
       const tag = value[discriminator.property];
       const selected = typeof tag === "string" && Object.hasOwn(discriminator.mapping, tag) ? discriminator.mapping[tag] : undefined;
@@ -336,10 +345,10 @@ export function oneOf(members: Validator[], discriminator?: Discriminator): Vali
         issues.push({ path: childPath(path, discriminator.property), message: `must be one of ${allowed}` });
         return;
       }
-      selected(value, path, issues);
+      selected(value, path, issues, direction);
       return;
     }
-    const results = members.map((member) => accepts(member, value, path));
+    const results = members.map((member) => accepts(member, value, path, direction));
     const matches = results.filter((result) => result.valid).length;
     if (matches === 1) {
       return;
@@ -355,5 +364,5 @@ export function oneOf(members: Validator[], discriminator?: Discriminator): Vali
 
 /** Defers a reference, so recursive and mutually recursive schemas (across modules too) can be defined. */
 export function lazy(resolveValidator: () => Validator): Validator {
-  return (value, path, issues) => resolveValidator()(value, path, issues);
+  return (value, path, issues, direction) => resolveValidator()(value, path, issues, direction);
 }

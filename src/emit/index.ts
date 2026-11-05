@@ -45,7 +45,7 @@ function renderIndex(intermediateFormat: IntermediateFormat): string {
     "export { createClient, isApiError, securitySchemes, servers, type ApiAuth, type ApiClient, type ApiErrors } from './client.js';",
     "export { serverUrl, type ClientOptions, type Server, type ServerVariable } from './runtime/client.js';",
     "export { createFetchSend, ApiError, type AuthCredentials, type BasicCredentials, type Credential, type FetchSendOptions, type Middleware, type SecurityScheme } from './runtime/fetch-send.js';",
-    "export { ResponseValidationError, type RequestOptions, type RetryOptions, type Send, type SendRequest, type ServiceConfig } from './runtime/service.js';",
+    "export { RequestValidationError, ResponseValidationError, type RequestOptions, type RetryOptions, type Send, type SendRequest, type ServiceConfig } from './runtime/service.js';",
     "export { TransformError } from './runtime/transform.js';",
     "export type { Issue } from './runtime/validation.js';",
   );
