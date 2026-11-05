@@ -6,6 +6,27 @@
     "title": "Petstore 3.0",
     "version": "1.0.0"
   },
+  "servers": [
+    {
+      "url": "http://{host}:{port}",
+      "description": "Local development server",
+      "variables": {
+        "host": {
+          "default": "localhost",
+          "enum": [
+            "localhost",
+            "127.0.0.1"
+          ]
+        },
+        "port": {
+          "default": "8080"
+        }
+      }
+    },
+    {
+      "url": "https://petstore.example.com"
+    }
+  ],
   "declarations": [
     {
       "name": "PetStatus",
@@ -418,6 +439,7 @@
   "services": [
     {
       "name": "PetsService",
+      "property": "pets",
       "folder": "pets",
       "description": "Everything about pets",
       "operations": [

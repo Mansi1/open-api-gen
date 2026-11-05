@@ -8,6 +8,34 @@ import { validate, type Issue, type Validator } from "./validation.js";
 export type ParameterStyle = { style: "form" | "simple" | "deepObject" | "spaceDelimited" | "pipeDelimited" | "label" | "matrix"; explode: boolean };
 export type ParameterLocation = "path" | "query" | "header" | "cookie";
 
+/** When and how often createFetchSend repeats a failed request. */
+export type RetryOptions = {
+  /** Repeats after the first attempt; 0 turns retrying off. */
+  retries: number;
+  /** Wait before the first repeat in milliseconds, doubled for each further one (default 300). */
+  delay?: number;
+  /** Upper bound for one wait, also for a server's Retry-After (default 10000). */
+  maxDelay?: number;
+  /** Statuses that are retried (default 408, 429, 500, 502, 503, 504). Network errors and timeouts always are. */
+  statusCodes?: number[];
+  /** Methods that are retried (default the idempotent ones: GET, HEAD, OPTIONS, PUT, DELETE, QUERY). */
+  methods?: string[];
+};
+
+/** Options for one call, passed as the last argument of every generated method. */
+export type RequestOptions = {
+  /** Cancels the request, including retries and their waits. */
+  signal?: AbortSignal;
+  /** Milliseconds per attempt before it fails with a TimeoutError; overrides the client's timeout. */
+  timeout?: number;
+  /** Extra headers for this call; they win over the client's headers and the operation's header parameters. */
+  headers?: Record<string, string>;
+  /** Retry settings for this call: a number of retries, full settings, or false for none. */
+  retry?: number | RetryOptions | false;
+  /** Sees the final response, also an unsuccessful one, e.g. to read pagination or rate-limit headers. Clone it before reading the body. */
+  onResponse?: (response: Response) => void | Promise<void>;
+};
+
 /**
  * What a service hands to `send`. The first seven fields are the dist3 contract, so an existing `send`
  * keeps working; the rest describe the operation for transports that want more detail (like createFetchSend).
@@ -33,6 +61,8 @@ export type SendRequest = {
   stream: boolean;
   /** Parse JSON losslessly (int64 beyond 2^53 as bigint); set when the client transforms values. */
   lossless: boolean;
+  /** The caller's per-call options; a custom `send` may honor or ignore them. */
+  options?: RequestOptions;
 };
 
 /** Sends one request and resolves with the parsed response body; throws for unsuccessful responses. */
@@ -92,7 +122,12 @@ export class ResponseValidationError extends Error {
 }
 
 /** The body of a generated service method: encode, send, validate, decode. */
-export async function callOperation(config: ServiceConfig<boolean>, operation: OperationDescriptor, operationArguments: OperationArguments): Promise<unknown> {
+export async function callOperation(
+  config: ServiceConfig<boolean>,
+  operation: OperationDescriptor,
+  operationArguments: OperationArguments,
+  options?: RequestOptions,
+): Promise<unknown> {
   const transform = config.transform === true;
   let body = operationArguments.body;
   if (transform && operation.requestTransformer !== undefined && body !== undefined) {
@@ -113,6 +148,9 @@ export async function callOperation(config: ServiceConfig<boolean>, operation: O
   };
   if (body !== undefined) {
     request.body = body;
+  }
+  if (options !== undefined) {
+    request.options = options;
   }
   if (operation.requestContentType !== undefined) {
     request.requestContentType = operation.requestContentType;

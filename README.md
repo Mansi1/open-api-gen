@@ -30,35 +30,135 @@ Warnings and errors go to stderr, each line starting with an ISO 8601 timestamp 
 ## Using the client
 
 ```ts
-import { PetsService, createFetchSend } from "./api/index.js";
+import { createClient } from "./api/index.js";
 
-const send = createFetchSend({ baseUrl: "https://api.example.com", headers: { authorization: `Bearer ${token}` } });
+// One call builds every service; baseUrl defaults to the document's first server.
+const api = createClient({
+  baseUrl: "https://api.example.com",
+  headers: async () => ({ authorization: `Bearer ${await getToken()}` }),
+  timeout: 10_000,
+  retry: 2,
+});
 
 // Wire values: exactly what the JSON contains.
-const pets = new PetsService({ send });
-const pet = await pets.getPet({ petId: 7 }); // pet.created_at: string
+const pet = await api.pets.getPet({ petId: 7 }); // pet.created_at: string
 
 // App values: dates as Date, int64 as bigint, names in camelCase (with --naming camelCase), plus your hooks.
-const appPets = new PetsService({ send, transform: true, validate: true });
-const appPet = await appPets.getPet({ petId: 7 }); // appPet.createdAt: Date
+const appApi = createClient({ baseUrl: "https://api.example.com", transform: true, validate: true });
+const appPet = await appApi.pets.getPet({ petId: 7 }); // appPet.createdAt: Date
+
+// Per-call options always come last.
+const controller = new AbortController();
+await api.pets.listPets({ limit: 20 }, undefined, {
+  signal: controller.signal,
+  onResponse: (response) => console.log(response.headers.get("x-total-count")),
+});
 ```
 
-Each operation is a method named after its `operationId`. Its arguments come in this order, each present only when the operation has it: `urlParameter`, `queryParameter`, `querystring` (OpenAPI 3.2), `headerParameter`, `cookieParameter`, `body`.
+`createClient` returns one property per service, named after its tag (`PetsService` → `api.pets`, untagged operations → `api.default`). The service classes can also be created on their own: `new PetsService({ send: createFetchSend({ baseUrl }), transform: true })`.
 
-The two client options are independent:
+Each operation is a method named after its `operationId`. Its arguments come in this order, each present only when the operation has it: `urlParameter`, `queryParameter`, `querystring` (OpenAPI 3.2), `headerParameter`, `cookieParameter`, `body`, and last the optional per-call `options`.
 
-- **`validate: true`** checks every response body against its schema and throws `ResponseValidationError` with a list of `{ path, message }` issues (JSON Pointer paths).
-- **`transform: true`** converts request bodies from App to wire form before sending, and response bodies from wire to App form after receiving. The method types switch with it: TypeScript infers `transform: true` from the constructor call and returns App types.
+### Client options
 
-`createFetchSend` serializes parameters by their OpenAPI `style` and `explode` settings, encodes JSON, form-urlencoded, multipart and binary bodies, reads JSON without losing int64 digits when `transform` is on, and throws `ApiError` (with `status` and the parsed `body`) for responses outside 2xx. Streamed responses (OpenAPI 3.2 `itemSchema`: JSON Lines, NDJSON, JSON text sequences, Server-Sent Events) come back as an `AsyncIterable`, validated and converted item by item.
+`createClient` takes these options; `createFetchSend` takes the same options except `send`, `validate` and `transform`, and requires `baseUrl`.
 
-You can pass your own `send` instead. It receives the dist3 fields `method`, `url` (the templated path, e.g. `/pets/{petId}`), `urlParameter`, `queryParameter`, `headerParameter`, `cookieParameter` and `body`, plus details such as `operationId`, `parameterStyles` and `responseContentTypes`, and resolves with the parsed response body.
+| Option | Meaning |
+|---|---|
+| `baseUrl` | Prefix for every path. Defaults to the first entry of `servers`, with its variables at their defaults, or `/` when the document declares none |
+| `headers` | Sent with every request; an object, or a function (may be async) called per attempt, e.g. for a token that expires |
+| `timeout` | Milliseconds per attempt before it fails with a `TimeoutError` (default: no limit) |
+| `retry` | A number of retries, or `{ retries, delay, maxDelay, statusCodes, methods }` (see below; default: no retries) |
+| `middleware` | A list of `{ onRequest, onResponse }` hooks, run in order on every attempt (see below) |
+| `init` | Further fetch settings for every request, e.g. `{ credentials: "include" }`, `{ cache: "no-store" }`, `{ keepalive: true }` |
+| `fetch` | Your own fetch function (default: the global `fetch`); it receives a standard `Request` |
+| `send` | Your own transport instead of `createFetchSend`; the transport options above then do nothing |
+| `validate` | Check every response body against its schema and throw `ResponseValidationError` with a list of `{ path, message }` issues (JSON Pointer paths) |
+| `transform` | Convert request bodies from App to wire form before sending, and response bodies from wire to App form after receiving. TypeScript infers `transform: true` from the call and switches every method to App types |
+
+`servers` holds the document's servers, and `serverUrl(server, variables)` fills a server's `{variable}` templates, checking each value against the variable's `enum`:
+
+```ts
+import { createClient, serverUrl, servers } from "./api/index.js";
+
+const api = createClient({ baseUrl: serverUrl(servers[1]!, { region: "eu" }) });
+```
+
+### Per-call options
+
+| Option | Meaning |
+|---|---|
+| `signal` | An `AbortSignal` that cancels the call, including retries and their waits |
+| `timeout` | Overrides the client's timeout for this call |
+| `headers` | Extra headers; they win over the client's headers and the operation's header parameters |
+| `retry` | Overrides the client's retry settings; `false` turns retrying off for this call |
+| `onResponse` | Called with the final `Response`, also an unsuccessful one, e.g. to read pagination or rate-limit headers. Clone it before reading the body |
+
+### Retries
+
+With `retry` set, a failed request is repeated when it ends in a network error, a timeout, or one of the `statusCodes` (default 408, 429, 500, 502, 503, 504). Only the idempotent `methods` are repeated by default: `GET`, `HEAD`, `OPTIONS`, `PUT`, `DELETE`, `QUERY`. A repeated `POST` could create a record twice; list it in `methods` only when the API makes it safe, for example with an idempotency key. The wait starts at `delay` (default 300 ms), doubles with each attempt and varies randomly between half and full length, up to `maxDelay` (default 10 s). A `Retry-After` header replaces the computed wait, still capped by `maxDelay`. Aborting through your own `signal` stops at once.
+
+### Middleware
+
+```ts
+const api = createClient({
+  middleware: [
+    {
+      onRequest: (request, details) => {
+        console.log(`${details.operationId} → ${request.method} ${request.url}`);
+        const headers = new Headers(request.headers);
+        headers.set("x-request-id", crypto.randomUUID());
+        return new Request(request, { headers });
+      },
+      onResponse: (response, request) => {
+        console.log(`${request.url} ← ${response.status}`);
+      },
+    },
+  ],
+});
+```
+
+`onRequest` runs before each attempt and may return a replacement `Request`. `onResponse` runs on each answer, including unsuccessful ones, before retries and errors are handled, and may return a replacement `Response`, for example the result of repeating the request after refreshing a token. `details` is the `SendRequest` described below.
+
+### Errors
+
+- `ApiError`: the answer's status is outside 2xx. It carries `status`, the parsed `body`, the `Response` and the `operationId`.
+- `ResponseValidationError`: only with `validate: true`. It carries `operationId`, `issues` and `body`.
+- `TimeoutError` (a `DOMException`): an attempt ran longer than `timeout`. Your own abort rejects with the signal's reason.
+- `TypeError`: a network failure, or a missing required path parameter.
+
+`isApiError(error, operationId)` checks that `error` is an `ApiError` thrown by that operation. It then narrows `status` and `body` to the error responses the document declares for the operation:
+
+```ts
+import { isApiError } from "./api/index.js";
+
+try {
+  await api.things.getThing({ id });
+} catch (error) {
+  if (isApiError(error, "getThing")) {
+    if (error.status === 404) {
+      console.log(error.body.code); // body: the 404 response schema
+    } else {
+      console.log(error.body.fields); // body: the 422 response schema
+    }
+  }
+}
+```
+
+`ApiErrors` maps every operationId to its error types, and each service file exports the same map for its own operations (`ThingsServiceErrors`). A `4XX`-style range or a `default` response has the status type `number`. An operation without declared error responses gets `ApiError<unknown, number>`. These types describe the document, not the server: error bodies are neither validated nor transformed, and a status the document does not declare still arrives at runtime with the declared types.
+
+### The transport
+
+`createFetchSend` serializes parameters by their OpenAPI `style` and `explode` settings. It encodes JSON, form-urlencoded, multipart and binary bodies, and reads JSON without losing int64 digits when `transform` is on. Streamed responses (OpenAPI 3.2 `itemSchema`: JSON Lines, NDJSON, JSON text sequences, Server-Sent Events) come back as an `AsyncIterable`, validated and converted item by item.
+
+You can pass your own `send` instead. It receives a `SendRequest` with the dist3 fields `method`, `url` (the templated path, e.g. `/pets/{petId}`), `urlParameter`, `queryParameter`, `headerParameter`, `cookieParameter` and `body`. It also gets details such as `operationId`, `parameterStyles`, `responseContentTypes` and the per-call `options`, and resolves with the parsed response body.
 
 ## Generated files
 
 ```
 api/
   index.ts                               services, wire types and the runtime API
+  client.ts                              servers and createClient
   interface/components/<Schema>.ts       one per schema, plus extracted inline enums and objects
   interface/request/<Operation>Request.ts
   interface/response/<Operation>Response.ts

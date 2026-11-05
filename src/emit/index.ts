@@ -2,6 +2,7 @@
 // stages"); test/boundaries.test.ts enforces that src/emit imports only types from Stage 1.
 // VERIFIED: test/boundaries.test.ts fails on any non-type import from src/intermediate-format.
 import type { IntermediateFormat } from "../intermediate-format/types.ts";
+import { emitClient } from "./client.ts";
 import { emitCodecs } from "./codecs.ts";
 import { declarationPath, emitInterfaces } from "./interfaces.ts";
 import { quote } from "./names.ts";
@@ -22,6 +23,7 @@ export function emit(intermediateFormat: IntermediateFormat): Files {
     ...emitValidators(intermediateFormat),
     ...emitCodecs(intermediateFormat),
     ...emitServices(intermediateFormat),
+    ...emitClient(intermediateFormat),
     // The header marks the runtime copies as generated too, so the next run may replace them.
     ...Object.entries(RUNTIME_SOURCES).map(([runtimePath, source]): [string, string] => [runtimePath, `${HEADER}${source}`]),
   ]);
@@ -38,9 +40,12 @@ function renderIndex(intermediateFormat: IntermediateFormat): string {
   for (const declaration of intermediateFormat.declarations) {
     lines.push(`export * from ${quote(importPath("index.ts", declarationPath(declaration, "wire")))};`);
   }
+  // Explicit exports win over `export *`, so a schema named like a runtime export stays reachable only through its own file.
   lines.push(
-    "export { createFetchSend, ApiError, type FetchSendOptions } from './runtime/fetch-send.js';",
-    "export { ResponseValidationError, type Send, type SendRequest, type ServiceConfig } from './runtime/service.js';",
+    "export { createClient, isApiError, servers, type ApiClient, type ApiErrors } from './client.js';",
+    "export { serverUrl, type ClientOptions, type Server, type ServerVariable } from './runtime/client.js';",
+    "export { createFetchSend, ApiError, type FetchSendOptions, type Middleware } from './runtime/fetch-send.js';",
+    "export { ResponseValidationError, type RequestOptions, type RetryOptions, type Send, type SendRequest, type ServiceConfig } from './runtime/service.js';",
     "export { TransformError } from './runtime/transform.js';",
     "export type { Issue } from './runtime/validation.js';",
   );

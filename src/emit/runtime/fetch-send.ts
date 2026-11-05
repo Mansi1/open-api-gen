@@ -2,27 +2,56 @@
 // modules, and it must run unchanged in browsers, Node.js and Bun.
 // VERIFIED: test/services.test.ts drives createFetchSend against a real Bun.serve server.
 import { parseJson, stringifyJson } from "./json.js";
-import type { ParameterLocation, ParameterStyle, Send, SendRequest } from "./service.js";
+import type { ParameterLocation, ParameterStyle, RetryOptions, Send, SendRequest } from "./service.js";
+
+/** Hooks around every attempt; they run in order and may return a replacement Request or Response. */
+export type Middleware = {
+  /** Called before each attempt, e.g. to sign the request or add a fresh token. */
+  onRequest?: (request: Request, details: SendRequest) => Request | void | Promise<Request | void>;
+  /** Called with each answer, also unsuccessful ones, before retry and error handling, e.g. to log or to refresh a token and repeat. */
+  onResponse?: (response: Response, request: Request, details: SendRequest) => Response | void | Promise<Response | void>;
+};
 
 export type FetchSendOptions = {
   /** Prefix for every path, e.g. `https://api.example.com/v1`. */
   baseUrl: string;
   /** Defaults to the global fetch. */
   fetch?: typeof fetch;
-  /** Sent with every request, e.g. an Authorization header. A function is called per request. */
+  /** Sent with every request, e.g. an Authorization header. A function is called per attempt. */
   headers?: Record<string, string> | (() => Record<string, string> | Promise<Record<string, string>>);
+  /** Further fetch settings for every request, e.g. `{ credentials: "include" }` or `{ cache: "no-store" }`. */
+  init?: Omit<RequestInit, "method" | "headers" | "body" | "signal">;
+  /** Milliseconds per attempt before it fails with a TimeoutError (default: no limit). */
+  timeout?: number;
+  /** Retry failed idempotent requests: a number of retries or full settings (default: no retries). */
+  retry?: number | RetryOptions;
+  /** Request and response hooks, run in order. */
+  middleware?: Middleware[];
 };
 
-/** A response with a status outside 2xx; `body` is the parsed error body when there is one. */
-export class ApiError extends Error {
+/**
+ * A response with a status outside 2xx; `body` is the parsed error body when there is one.
+ * The type parameters are what the API document declares for the status; the body itself is not checked.
+ */
+export class ApiError<Body = unknown, Status extends number = number> extends Error {
   constructor(
-    readonly status: number,
-    readonly body: unknown,
+    readonly status: Status,
+    readonly body: Body,
     readonly response: Response,
+    readonly operationId?: string,
   ) {
-    super(`${response.url} answered ${status} ${response.statusText}`);
+    const prefix = operationId === undefined ? "" : `${operationId}: `;
+    super(`${prefix}${response.url} answered ${status} ${response.statusText}`);
     this.name = "ApiError";
   }
+}
+
+/** True WHEN `error` is an ApiError, and, with `operationId`, one thrown by that operation. The generated client wraps it with typed narrowing. */
+export function isApiErrorOf(error: unknown, operationId?: string): error is ApiError {
+  if (!(error instanceof ApiError)) {
+    return false;
+  }
+  return operationId === undefined || error.operationId === operationId;
 }
 
 type RequestBody = NonNullable<RequestInit["body"]>;
@@ -34,39 +63,168 @@ const DEFAULT_STYLES: Record<ParameterLocation, ParameterStyle> = {
   cookie: { style: "form", explode: true },
 };
 
+const DEFAULT_RETRY: Required<RetryOptions> = {
+  retries: 0,
+  delay: 300,
+  maxDelay: 10_000,
+  statusCodes: [408, 429, 500, 502, 503, 504],
+  methods: ["GET", "HEAD", "OPTIONS", "PUT", "DELETE", "QUERY"],
+};
+
 /** The default `send`: builds the request with fetch, following the OpenAPI serialization rules. */
 export function createFetchSend(options: FetchSendOptions): Send {
   const fetchFunction = options.fetch ?? globalThis.fetch;
+  const middleware = options.middleware ?? [];
   return async <Result>(request: SendRequest): Promise<Result> => {
     const url = buildUrl(options.baseUrl, request);
-    const headers = new Headers(typeof options.headers === "function" ? await options.headers() : options.headers);
-    for (const [name, value] of Object.entries(request.headerParameter ?? {})) {
-      if (value !== undefined) {
-        headers.set(name, serializeSimple(value, styleOf(request, "header", name).explode));
-      }
-    }
-    const cookie = serializeCookies(request);
-    if (cookie !== "") {
-      headers.set("cookie", cookie);
-    }
-    if (request.responseContentTypes.length > 0 && !headers.has("accept")) {
-      headers.set("accept", request.responseContentTypes.join(", "));
+    const callOptions = request.options ?? {};
+    const retry = resolveRetry(callOptions.retry ?? options.retry);
+    const retriesAllowed = retry.methods.includes(request.method.toUpperCase()) ? retry.retries : 0;
+    const timeout = callOptions.timeout ?? options.timeout;
+    let body: RequestBody | undefined;
+    let bodyContentType: string | undefined;
+    if (request.body !== undefined) {
+      const encoded = encodeBody(request.body, request.requestContentType ?? "application/json");
+      body = encoded.body;
+      bodyContentType = encoded.contentType;
     }
 
-    const init: RequestInit = { method: request.method, headers };
-    if (request.body !== undefined) {
-      init.body = encodeBody(request.body, request.requestContentType ?? "application/json", headers);
+    // A fresh Request per attempt: headers() may hand out a refreshed token, the timeout restarts, and middleware
+    // sees a standard Request it can replace. The encoded body (string, FormData, Blob, bytes) is reusable across attempts.
+    let response: Response | undefined;
+    for (let attempt = 0; response === undefined; attempt++) {
+      const headers = await buildHeaders(options, request, bodyContentType);
+      const signals: AbortSignal[] = [];
+      if (callOptions.signal !== undefined) {
+        signals.push(callOptions.signal);
+      }
+      if (timeout !== undefined) {
+        signals.push(AbortSignal.timeout(timeout));
+      }
+      const init: RequestInit = { ...options.init, method: request.method, headers };
+      if (body !== undefined) {
+        init.body = body;
+      }
+      if (signals.length > 0) {
+        init.signal = signals.length === 1 ? signals[0]! : AbortSignal.any(signals);
+      }
+      let fetchRequest = new Request(url, init);
+      for (const hooks of middleware) {
+        fetchRequest = (await hooks.onRequest?.(fetchRequest, request)) ?? fetchRequest;
+      }
+
+      let answer: Response;
+      try {
+        answer = await fetchFunction(fetchRequest);
+      } catch (error) {
+        // The caller's own abort ends everything; a network error or timeout may be retried.
+        if (callOptions.signal?.aborted === true || attempt >= retriesAllowed) {
+          throw error;
+        }
+        await wait(backoff(retry, attempt), callOptions.signal);
+        continue;
+      }
+      for (const hooks of middleware) {
+        answer = (await hooks.onResponse?.(answer, fetchRequest, request)) ?? answer;
+      }
+      if (attempt < retriesAllowed && retry.statusCodes.includes(answer.status)) {
+        const delay = retryAfter(answer, retry) ?? backoff(retry, attempt);
+        // Frees the connection; a body that middleware left locked cannot be cancelled and is left to the garbage collector.
+        await answer.body?.cancel().catch(() => undefined);
+        await wait(delay, callOptions.signal);
+        continue;
+      }
+      response = answer;
     }
-    const response = await fetchFunction(url, init);
+
+    await callOptions.onResponse?.(response);
     if (!response.ok) {
       // Error bodies get no transformer, so they are parsed plainly.
-      throw new ApiError(response.status, await readBody(response, false).catch(() => undefined), response);
+      throw new ApiError(response.status, await readBody(response, false).catch(() => undefined), response, request.operationId);
     }
     if (request.stream) {
       return readStream(response, request.lossless) as Result;
     }
     return (await readBody(response, request.lossless)) as Result;
   };
+}
+
+/** Client headers, then header parameters, then the call's own headers; later ones win. */
+async function buildHeaders(options: FetchSendOptions, request: SendRequest, bodyContentType: string | undefined): Promise<Headers> {
+  const headers = new Headers(typeof options.headers === "function" ? await options.headers() : options.headers);
+  for (const [name, value] of Object.entries(request.headerParameter ?? {})) {
+    if (value !== undefined) {
+      headers.set(name, serializeSimple(value, styleOf(request, "header", name).explode));
+    }
+  }
+  const cookie = serializeCookies(request);
+  if (cookie !== "") {
+    headers.set("cookie", cookie);
+  }
+  if (bodyContentType !== undefined) {
+    headers.set("content-type", bodyContentType);
+  }
+  for (const [name, value] of Object.entries(request.options?.headers ?? {})) {
+    headers.set(name, value);
+  }
+  if (request.responseContentTypes.length > 0 && !headers.has("accept")) {
+    headers.set("accept", request.responseContentTypes.join(", "));
+  }
+  return headers;
+}
+
+// ---------------------------------------------------------------- retry
+
+function resolveRetry(retry: number | RetryOptions | false | undefined): Required<RetryOptions> {
+  if (retry === undefined || retry === false) {
+    return DEFAULT_RETRY;
+  }
+  if (typeof retry === "number") {
+    return { ...DEFAULT_RETRY, retries: retry };
+  }
+  const resolved = { ...DEFAULT_RETRY, ...retry };
+  resolved.methods = resolved.methods.map((method) => method.toUpperCase());
+  return resolved;
+}
+
+/** Exponential backoff with jitter: delay · 2^attempt, capped, then scaled by a random factor in [0.5, 1]. */
+function backoff(retry: Required<RetryOptions>, attempt: number): number {
+  const exponential = Math.min(retry.maxDelay, retry.delay * 2 ** attempt);
+  return exponential * (0.5 + Math.random() / 2);
+}
+
+/** The server's Retry-After in milliseconds (seconds or an HTTP date), capped by maxDelay; undefined when absent or unreadable. */
+function retryAfter(response: Response, retry: Required<RetryOptions>): number | undefined {
+  const header = response.headers.get("retry-after");
+  if (header === null) {
+    return undefined;
+  }
+  let milliseconds = Number(header) * 1000;
+  if (Number.isNaN(milliseconds)) {
+    milliseconds = Date.parse(header) - Date.now();
+  }
+  if (Number.isNaN(milliseconds)) {
+    return undefined;
+  }
+  return Math.min(retry.maxDelay, Math.max(0, milliseconds));
+}
+
+function wait(milliseconds: number, signal: AbortSignal | undefined): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted === true) {
+      reject(signal.reason);
+      return;
+    }
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(signal?.reason);
+    };
+    const timer = setTimeout(() => {
+      signal?.removeEventListener("abort", onAbort);
+      resolve();
+    }, milliseconds);
+    signal?.addEventListener("abort", onAbort, { once: true });
+  });
 }
 
 function styleOf(request: SendRequest, location: ParameterLocation, name: string): ParameterStyle {
@@ -238,10 +396,10 @@ function serializeCookies(request: SendRequest): string {
 
 // ---------------------------------------------------------------- bodies
 
-function encodeBody(body: unknown, contentType: string, headers: Headers): RequestBody {
+/** The fetch body and the content-type header to send with it (none for multipart: fetch adds the boundary itself). */
+function encodeBody(body: unknown, contentType: string): { body: RequestBody; contentType?: string } {
   const mediaType = contentType.split(";")[0]!.trim().toLowerCase();
   if (mediaType === "multipart/form-data") {
-    // fetch sets the multipart boundary itself, so no content-type header here.
     const form = new FormData();
     for (const [key, value] of entriesOf((body ?? {}) as Record<string, unknown>)) {
       const values = Array.isArray(value) ? value : [value];
@@ -249,19 +407,18 @@ function encodeBody(body: unknown, contentType: string, headers: Headers): Reque
         form.append(key, item instanceof Blob ? item : text(item));
       }
     }
-    return form;
+    return { body: form };
   }
-  headers.set("content-type", contentType);
   if (mediaType === "application/x-www-form-urlencoded") {
-    return serializeQuerystring(body, mediaType);
+    return { body: serializeQuerystring(body, mediaType), contentType };
   }
   if (mediaType === "application/json" || mediaType.endsWith("+json")) {
-    return stringifyJson(body);
+    return { body: stringifyJson(body), contentType };
   }
   if (body instanceof Blob || body instanceof ArrayBuffer || ArrayBuffer.isView(body) || typeof body === "string") {
-    return body as RequestBody;
+    return { body: body as RequestBody, contentType };
   }
-  return text(body);
+  return { body: text(body), contentType };
 }
 
 function isJson(contentType: string): boolean {

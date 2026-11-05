@@ -6,6 +6,12 @@
     "title": "Offset API",
     "version": "1.0"
   },
+  "servers": [
+    {
+      "url": "//localhost:8000/",
+      "description": "Local"
+    }
+  ],
   "declarations": [
     {
       "name": "StatusResponse",
@@ -1003,6 +1009,7 @@
   "services": [
     {
       "name": "OffsetService",
+      "property": "offset",
       "folder": "offset-service",
       "description": "Offset management service",
       "operations": [
@@ -1290,6 +1297,7 @@
     },
     {
       "name": "HealthCheckService",
+      "property": "healthCheck",
       "folder": "health-check-service",
       "description": "System health management service",
       "operations": [
@@ -1326,6 +1334,7 @@
     },
     {
       "name": "PlaygroundService",
+      "property": "playground",
       "folder": "playground-service",
       "operations": [
         {
@@ -1457,6 +1466,7 @@
     },
     {
       "name": "DefaultService",
+      "property": "default",
       "folder": "default",
       "operations": [
         {

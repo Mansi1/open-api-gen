@@ -6,6 +6,7 @@
     "title": "Petstore 3.1",
     "version": "1.0.0"
   },
+  "servers": [],
   "declarations": [
     {
       "name": "PetStatus",
@@ -279,6 +280,7 @@
   "services": [
     {
       "name": "PetsService",
+      "property": "pets",
       "folder": "pets",
       "description": "Everything about pets",
       "operations": [

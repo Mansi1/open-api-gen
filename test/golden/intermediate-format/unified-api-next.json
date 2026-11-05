@@ -7,6 +7,11 @@
     "version": "1.0.1",
     "description": "ClimatePartner Unified Integration Solutions API."
   },
+  "servers": [
+    {
+      "url": "https://unified-api.ins-dev.c12r.io"
+    }
+  ],
   "declarations": [
     {
       "name": "OrderInfoRequestHeader",
@@ -1506,6 +1511,7 @@
   "services": [
     {
       "name": "IndividualOrderEmissionsService",
+      "property": "individualOrderEmissions",
       "folder": "individual-order-emissions",
       "description": "Offset management service",
       "operations": [
@@ -1865,6 +1871,7 @@
     },
     {
       "name": "CollectiveAndSubordersEmissionsService",
+      "property": "collectiveAndSubordersEmissions",
       "folder": "collective-and-suborders-emissions",
       "description": "Offset management service",
       "operations": [
@@ -2413,6 +2420,7 @@
     },
     {
       "name": "AvailabilityPriceCheckEmissionsService",
+      "property": "availabilityPriceCheckEmissions",
       "folder": "availability-price-check-emissions",
       "description": "Offset management service",
       "operations": [
@@ -2502,6 +2510,7 @@
     },
     {
       "name": "CarbonOffsetProjectsService",
+      "property": "carbonOffsetProjects",
       "folder": "carbon-offset-projects",
       "description": "Offset management service",
       "operations": [
@@ -2582,6 +2591,7 @@
     },
     {
       "name": "HealthcheckService",
+      "property": "healthcheck",
       "folder": "healthcheck-service",
       "description": "Check for the availability of the API and its functionality",
       "operations": [

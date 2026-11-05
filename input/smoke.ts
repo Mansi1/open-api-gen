@@ -3,10 +3,11 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
 import { Decimal } from "../../input/hooks/decimal.js";
-import { ApiError, createFetchSend, ResponseValidationError, StoreService } from "../clients/petstore-app/index.js";
+import { ApiError, createClient, createFetchSend, isApiError, ResponseValidationError, servers, StoreService, type Middleware } from "../clients/petstore-app/index.js";
 
 type Received = { method: string; url: string; body: string; contentType: string };
 const received: Received[] = [];
+let busyAnswers = 0;
 
 function respond(response: ServerResponse, status: number, body: string): void {
   response.writeHead(status, { "content-type": "application/json" });
@@ -25,8 +26,15 @@ async function handle(request: IncomingMessage, response: ServerResponse): Promi
     respond(response, 200, '{"id":"one","quantity":2}');
   } else if (request.url === "/store/order" && request.method === "POST") {
     respond(response, 200, body);
+  } else if (request.url === "/store/inventory" && busyAnswers > 0) {
+    busyAnswers--;
+    response.writeHead(503, { "retry-after": "0" });
+    response.end();
   } else if (request.url === "/store/inventory") {
-    respond(response, 200, '{"available":3,"sold":1}');
+    response.writeHead(200, { "content-type": "application/json", "x-rate-limit-remaining": "9" });
+    response.end('{"available":3,"sold":1}');
+  } else if (request.url === "/store/order/5") {
+    setTimeout(() => respond(response, 200, '{"id":5}'), 500);
   } else {
     respond(response, 404, '{"message":"unknown order"}');
   }
@@ -74,6 +82,29 @@ try {
     apiError = error;
   }
   check(apiError instanceof ApiError && apiError.status === 404, "a 404 throws ApiError with its status");
+  check(isApiError(apiError, "getOrderById") && !isApiError(apiError, "placeOrder"), "isApiError names the operation that failed");
+
+  check(servers[0]?.url === "/v3", "servers lists the document's servers");
+  const statuses: number[] = [];
+  const middleware: Middleware[] = [{ onResponse: (answer) => void statuses.push(answer.status) }];
+  const api = createClient({ baseUrl: `http://127.0.0.1:${port}`, transform: true, validate: true, retry: { retries: 2, delay: 1 }, middleware });
+  busyAnswers = 2;
+  let remaining: string | null = null;
+  const retried = await api.store.getInventory({
+    onResponse: (answer) => {
+      remaining = answer.headers.get("x-rate-limit-remaining");
+    },
+  });
+  check(retried.available === 3 && statuses.join(",") === "503,503,200", "createClient retries a busy GET and runs the middleware per attempt");
+  check(String(remaining) === "9", "a per-call onResponse reads response headers");
+
+  let timeoutError: unknown;
+  try {
+    await api.store.getOrderById({ orderId: 5 }, { timeout: 50, retry: false });
+  } catch (error) {
+    timeoutError = error;
+  }
+  check(timeoutError instanceof Error && timeoutError.name === "TimeoutError", "a per-call timeout aborts a slow answer");
 } finally {
   server.close();
 }

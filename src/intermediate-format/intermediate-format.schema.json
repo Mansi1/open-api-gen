@@ -495,6 +495,49 @@
         "null"
       ]
     },
+    "Server": {
+      "additionalProperties": false,
+      "description": "An OpenAPI Server Object; `url` may hold `{variable}` templates that `variables` defines.",
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "variables": {
+          "additionalProperties": {
+            "$ref": "#/definitions/ServerVariable"
+          },
+          "type": "object"
+        }
+      },
+      "required": [
+        "url"
+      ],
+      "type": "object"
+    },
+    "ServerVariable": {
+      "additionalProperties": false,
+      "properties": {
+        "default": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "enum": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "default"
+      ],
+      "type": "object"
+    },
     "Service": {
       "additionalProperties": false,
       "properties": {
@@ -514,10 +557,15 @@
             "$ref": "#/definitions/Operation"
           },
           "type": "array"
+        },
+        "property": {
+          "description": "Property of the generated `createClient` result that holds this service, e.g. `pets`.",
+          "type": "string"
         }
       },
       "required": [
         "name",
+        "property",
         "folder",
         "operations"
       ],
@@ -986,6 +1034,13 @@
       "const": 1,
       "type": "number"
     },
+    "servers": {
+      "description": "The document's top-level `servers`, in order; the first one is the generated client's default base URL. VERIFIED: an absent or empty list means one server with url `/` (spec/openapi-3.1.2.md:328); the runtime applies that default.",
+      "items": {
+        "$ref": "#/definitions/Server"
+      },
+      "type": "array"
+    },
     "services": {
       "items": {
         "$ref": "#/definitions/Service"
@@ -1029,6 +1084,7 @@
   "required": [
     "intermediateFormatVersion",
     "source",
+    "servers",
     "declarations",
     "services",
     "hooks",

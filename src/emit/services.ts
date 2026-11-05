@@ -1,5 +1,6 @@
-// Emits one dist3-shaped service class per tag. Methods delegate to runtime/service.ts callOperation with a static
+// Emits one dist3-shaped service class per tag. Methods delegate to runtime/service.ts callOperation with an
 // operation descriptor, so encode → send → validate → decode is written and tested once, not per operation.
+// The descriptor is written inline in its method rather than as a module constant, so each method reads on its own.
 // VERIFIED: test/services.test.ts runs generated services against a real Bun.serve server.
 import type { Declaration, IntermediateFormat, Operation, ParameterGroup, ParameterLocation, Service, TypeNode } from "../intermediate-format/types.ts";
 import { CodecRenderer } from "./codecs.ts";
@@ -48,16 +49,16 @@ class ServiceFile {
   }
 
   render(): string {
-    const descriptors: string[] = [];
     const methods: string[] = [];
     for (const operation of this.service.operations) {
-      const descriptorName = `${identifier(operation.name)}Operation`;
-      descriptors.push(this.renderDescriptor(operation, descriptorName));
-      methods.push(this.renderMethod(operation, descriptorName));
+      methods.push(this.renderMethod(operation, this.renderDescriptor(operation)));
     }
+    const errorsType = this.renderErrors();
     const runtimePath = importPath(this.path, "runtime/service.ts");
     const imports = [
-      `import { callOperation, type OperationDescriptor, type ServiceConfig } from ${quote(runtimePath)};`,
+      // Lowercase namespaces: declaration names are PascalCase, so a schema named ApiError or RequestOptions cannot clash.
+      `import * as serviceRuntime from ${quote(runtimePath)};`,
+      `import type * as fetchRuntime from ${quote(importPath(this.path, "runtime/fetch-send.ts"))};`,
       this.typeImports.lines().trimEnd(),
       this.validators.importLines(false).trimEnd(),
       this.codecs.importLines(false).trimEnd(),
@@ -76,12 +77,52 @@ class ServiceFile {
     return [
       HEADER,
       `${importText}\n\n`,
-      descriptors.join("\n"),
-      `\n${docComment(classComment)}export class ${name}<Transform extends boolean = false> {\n\n`,
-      `${INDENT}constructor(public config: ServiceConfig<Transform>) {\n${INDENT}}\n\n`,
+      `${docComment(classComment)}export class ${name}<Transform extends boolean = false> {\n\n`,
+      `${INDENT}constructor(public config: serviceRuntime.ServiceConfig<Transform>) {\n${INDENT}}\n\n`,
       methods.join("\n"),
-      "}\n",
+      "}\n\n",
+      errorsType,
     ].join("");
+  }
+
+  /**
+   * `<Service>Errors`: per operationId, the ApiError variants its declared non-success responses describe.
+   * Error bodies are parsed plainly (no transform), so they get wire types. A range (`4XX`) or `default` status is
+   * `number`; an operation without declared error responses gets `ApiError<unknown, number>`.
+   */
+  private renderErrors(): string {
+    const members: string[] = [];
+    for (const operation of this.service.operations) {
+      const bodyTypesByStatus = new Map<string, Set<string>>();
+      for (const response of operation.responses) {
+        if (operation.success.includes(response.status)) {
+          continue;
+        }
+        // A streamed error body is read as one plain value, so its item type does not describe it.
+        const bodyType = response.type === undefined || response.stream ? "unknown" : this.wireTypes.render(response.type);
+        let bodyTypes = bodyTypesByStatus.get(response.status);
+        if (bodyTypes === undefined) {
+          bodyTypes = new Set();
+          bodyTypesByStatus.set(response.status, bodyTypes);
+        }
+        bodyTypes.add(bodyType);
+      }
+      const variants: string[] = [];
+      for (const [status, bodyTypes] of bodyTypesByStatus) {
+        const statusType = /^[1-5][0-9][0-9]$/.test(status) ? status : "number";
+        const bodyType = bodyTypes.has("unknown") ? "unknown" : [...bodyTypes].join(" | ");
+        variants.push(`fetchRuntime.ApiError<${bodyType}, ${statusType}>`);
+      }
+      if (variants.length === 0) {
+        variants.push("fetchRuntime.ApiError<unknown, number>");
+      }
+      members.push(`${INDENT}${propertyKey(operation.operationId)}: ${variants.join(" | ")};\n`);
+    }
+    const comment = [
+      `The errors each operation of ${identifier(this.service.name)} declares, keyed by operationId; narrow with \`isApiError(error, operationId)\`.`,
+      "Statuses the document does not declare are not listed; the bodies are not checked at runtime.",
+    ];
+    return `${docComment(comment)}export type ${identifier(this.service.name)}Errors = {\n${members.join("")}};\n`;
   }
 
   private successType(operation: Operation): TypeNode | undefined {
@@ -100,7 +141,8 @@ class ServiceFile {
     return { kind: "union", mode: "anyOf", members: types };
   }
 
-  private renderDescriptor(operation: Operation, descriptorName: string): string {
+  /** The operation descriptor as an object literal, indented to sit inside a method body. */
+  private renderDescriptor(operation: Operation): string {
     const fields: string[] = [
       `operationId: ${quote(operation.operationId)}`,
       `method: ${quote(operation.method)}`,
@@ -135,8 +177,9 @@ class ServiceFile {
         fields.push(`responseTransformer: ${this.codecs.render(successType)}`);
       }
     }
-    const body = fields.map((field) => `${INDENT}${field},`).join("\n");
-    return `const ${descriptorName}: OperationDescriptor = {\n${body}\n};\n`;
+    const fieldIndent = INDENT.repeat(3);
+    const body = fields.map((field) => `${fieldIndent}${field},`).join("\n");
+    return `{\n${body}\n${INDENT}${INDENT}}`;
   }
 
   /** True WHEN one success response has a body type and another has none (e.g. 200 with a body, 204 without). */
@@ -169,7 +212,7 @@ class ServiceFile {
     return `Transform extends true ? ${app} : ${wire}`;
   }
 
-  private renderMethod(operation: Operation, descriptorName: string): string {
+  private renderMethod(operation: Operation, descriptor: string): string {
     const parameterArguments: [string, ParameterLocation][] = [["urlParameter", "path"], ["queryParameter", "query"]];
     const argumentsList: Argument[] = [];
     for (const [argumentName, location] of parameterArguments) {
@@ -205,6 +248,8 @@ class ServiceFile {
         return `${argument.name}?: ${argument.type}`;
       })
       .join(", ");
+    // Per-call options (signal, timeout, headers, retry, onResponse) always come last, so they never shift a parameter.
+    const fullSignature = signature === "" ? "options?: serviceRuntime.RequestOptions" : `${signature}, options?: serviceRuntime.RequestOptions`;
 
     const successType = this.successType(operation);
     let resultType = successType === undefined ? "void" : this.shapedType(successType);
@@ -236,8 +281,8 @@ class ServiceFile {
     const passed = argumentsList.map((argument) => argument.name).join(", ");
     return [
       docComment(comment, INDENT),
-      `${INDENT}${identifier(operation.name)} = (${signature}): Promise<${resultType}> => {\n`,
-      `${INDENT}${INDENT}return callOperation(this.config, ${descriptorName}, { ${passed} }) as Promise<${resultType}>;\n`,
+      `${INDENT}${identifier(operation.name)} = (${fullSignature}): Promise<${resultType}> => {\n`,
+      `${INDENT}${INDENT}return serviceRuntime.callOperation(this.config, ${descriptor}, { ${passed} }, options) as Promise<${resultType}>;\n`,
       `${INDENT}};\n`,
     ].join("");
   }

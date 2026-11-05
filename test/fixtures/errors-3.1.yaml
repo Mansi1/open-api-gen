@@ -1,0 +1,70 @@
+openapi: 3.1.1
+info:
+  title: Typed errors
+  version: 1.0.0
+paths:
+  /things/{id}:
+    get:
+      operationId: getThing
+      tags: [things]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: The thing
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Thing" }
+        "404":
+          description: Unknown thing
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApiError" }
+        "422":
+          description: Invalid id
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValidationProblem" }
+    put:
+      operationId: putThing
+      tags: [things]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RequestOptions" }
+      responses:
+        "204":
+          description: Stored
+        default:
+          description: Any error
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ServiceConfig" }
+components:
+  schemas:
+    Thing:
+      type: object
+      required: [id]
+      properties:
+        id: { type: string }
+    ApiError:
+      type: object
+      required: [code]
+      properties:
+        code: { type: string }
+    ValidationProblem:
+      type: object
+      required: [fields]
+      properties:
+        fields: { type: array, items: { type: string } }
+    RequestOptions:
+      type: object
+      properties:
+        retry: { type: boolean }
+    ServiceConfig:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string }

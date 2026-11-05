@@ -7,6 +7,11 @@
     "version": "1.0.11",
     "description": "This is a sample Pet Store Server based on the OpenAPI 3.0 specification.  You can find out more about\nSwagger at [http://swagger.io](http://swagger.io). In the third iteration of the pet store, we've switched to the design first approach!\nYou can now help us improve the API whether it's by making changes to the definition itself or to the code.\nThat way, with time, we can improve the API in general, and expose some of the new features in OAS3.\nSome useful links:\n- [The Pet Store repository](https://github.com/swagger-api/swagger-petstore)\n- [The source API definition for the Pet Store](https://github.com/swagger-api/swagger-petstore/blob/master/src/main/resources/openapi.yaml)"
   },
+  "servers": [
+    {
+      "url": "/v3"
+    }
+  ],
   "declarations": [
     {
       "name": "Order",
@@ -1393,6 +1398,7 @@
   "services": [
     {
       "name": "PetService",
+      "property": "pet",
       "folder": "pet",
       "description": "Everything about your Pets",
       "operations": [
@@ -1844,6 +1850,7 @@
     },
     {
       "name": "StoreService",
+      "property": "store",
       "folder": "store",
       "description": "Access to Petstore orders",
       "operations": [
@@ -2024,6 +2031,7 @@
     },
     {
       "name": "UserService",
+      "property": "user",
       "folder": "user",
       "description": "Operations about user",
       "operations": [

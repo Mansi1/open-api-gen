@@ -8,6 +8,11 @@
 export type IntermediateFormat = {
   intermediateFormatVersion: 1;
   source: { path: string; openapi: string; title: string; version: string; description?: string };
+  /**
+   * The document's top-level `servers`, in order; the first one is the generated client's default base URL.
+   * VERIFIED: an absent or empty list means one server with url `/` (spec/openapi-3.1.2.md:328); the runtime applies that default.
+   */
+  servers: Server[];
   /** Every named type; Stage 2 writes one file per declaration. */
   declarations: Declaration[];
   services: Service[];
@@ -18,6 +23,11 @@ export type IntermediateFormat = {
 
 /** A problem found in the input; `pointer` is a JSON Pointer into the OpenAPI document. */
 export type Diagnostic = { pointer: string; message: string };
+
+/** An OpenAPI Server Object; `url` may hold `{variable}` templates that `variables` defines. */
+export type Server = { url: string; description?: string; variables?: Record<string, ServerVariable> };
+
+export type ServerVariable = { default: string; enum?: string[]; description?: string };
 
 export type Hook = { type: string; import: string; decode: string; encode: string };
 
@@ -105,6 +115,8 @@ export type Discriminator = { property: string; mapping: Record<string, string> 
 export type Service = {
   /** Class name, e.g. `PetsService`. */
   name: string;
+  /** Property of the generated `createClient` result that holds this service, e.g. `pets`. */
+  property: string;
   /** Folder under `service/`. */
   folder: string;
   description?: string;

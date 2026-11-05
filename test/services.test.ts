@@ -11,6 +11,8 @@ const repositoryRoot = join(import.meta.dir, "..");
 type RecordedRequest = { method: string; path: string; query: string; headers: Record<string, string>; body: string };
 const recorded: RecordedRequest[] = [];
 const lastRequest = () => recorded[recorded.length - 1]!;
+const requestsTo = (path: string) => recorded.filter((request) => request.path === path);
+const attemptsByPath = new Map<string, number>();
 
 // A real HTTP server on a free port; each route answers like the fixture APIs would.
 let server: ReturnType<typeof Bun.serve>;
@@ -24,7 +26,29 @@ beforeAll(() => {
     async fetch(request) {
       const url = new URL(request.url);
       recorded.push({ method: request.method, path: url.pathname, query: url.search, headers: Object.fromEntries(request.headers), body: await request.text() });
-      const json = (text: string, status = 200) => new Response(text, { status, headers: { "content-type": "application/json" } });
+      const json = (text: string, status = 200) => new Response(text, { status, headers: { "content-type": "application/json", "x-rate-limit-remaining": "41" } });
+      if (request.headers.get("x-fail") === "503") {
+        return new Response("busy", { status: 503 });
+      }
+      if (url.pathname.startsWith("/pets/flaky-")) {
+        // Busy twice, then answers: the retry tests count the attempts.
+        const attempts = (attemptsByPath.get(url.pathname) ?? 0) + 1;
+        attemptsByPath.set(url.pathname, attempts);
+        if (attempts <= 2) {
+          return new Response("busy", { status: 503, headers: { "retry-after": "0" } });
+        }
+        return json(wirePetText);
+      }
+      if (url.pathname === "/pets/slow") {
+        await Bun.sleep(300);
+        return json(wirePetText);
+      }
+      if (url.pathname === "/things/missing") {
+        return json('{"code":"missing"}', 404);
+      }
+      if (url.pathname === "/things/bad%20id") {
+        return json('{"fields":["id"]}', 422);
+      }
       if (url.pathname === "/pets/404") {
         return json('{"code":404,"message":"no such pet"}', 404);
       }
@@ -185,6 +209,194 @@ describe("generated services against a live server", () => {
   });
 });
 
+describe("createClient and servers", () => {
+  test("baseUrl defaults to the first server with its variable defaults; serverUrl fills and checks variables", async () => {
+    const { client } = await generateClient("test/fixtures/petstore-3.0.yaml", "client-servers");
+    expect(client.servers.map((server: { url: string }) => server.url)).toEqual(["http://{host}:{port}", "https://petstore.example.com"]);
+    expect(client.serverUrl(client.servers[0])).toBe("http://localhost:8080");
+    expect(client.serverUrl(client.servers[0], { host: "127.0.0.1", port: "3000" })).toBe("http://127.0.0.1:3000");
+    expect(() => client.serverUrl(client.servers[0], { host: "example.org" })).toThrow('variable "host" must be one of localhost, 127.0.0.1');
+
+    const fetchedUrls: string[] = [];
+    const recordingFetch = async (request: Request) => {
+      fetchedUrls.push(request.url);
+      return new Response(wirePetText, { headers: { "content-type": "application/json" } });
+    };
+    const api = client.createClient({ fetch: recordingFetch });
+    await api.pets.getPet({ petId: 7 });
+    expect(fetchedUrls).toEqual(["http://localhost:8080/pets/7"]);
+  });
+
+  test("one configuration for every service: transport options, validate and transform", async () => {
+    const { client } = await generateClient("test/fixtures/petstore-3.0.yaml", "client-live");
+    const api = client.createClient({ baseUrl: client.serverUrl(client.servers[0], { port: String(server.port) }), headers: { authorization: "Bearer t" }, transform: true, validate: true });
+    const pet = await api.pets.getPet({ petId: 7 });
+    expect(pet.created_at).toEqual(new Date("2026-01-02T03:04:05.000Z"));
+    expect(lastRequest().headers.authorization).toBe("Bearer t");
+    await expect(api.pets.getPet({ petId: "broken" })).rejects.toBeInstanceOf(client.ResponseValidationError);
+
+    const seen: string[] = [];
+    const custom = client.createClient({ send: async (request: { operationId: string }) => {
+      seen.push(request.operationId);
+      return JSON.parse(wirePetText);
+    } });
+    await custom.pets.getPet({ petId: 1 });
+    expect(seen).toEqual(["getPet"]);
+  });
+});
+
+describe("transport options", () => {
+  test("per-call options: headers win, onResponse reads response headers, a custom send receives them", async () => {
+    const { client } = await generateClient("test/fixtures/petstore-3.0.yaml", "options-call");
+    const pets = new client.PetsService({ send: client.createFetchSend({ baseUrl, headers: { "x-client": "default", "x-trace": "client" } }) });
+    const remainingSeen: (string | null)[] = [];
+    await pets.listPets({ limit: 1 }, { "X-Request-Id": "from-parameter" }, {
+      headers: { "x-trace": "call", "x-request-id": "from-options" },
+      onResponse: (response: Response) => {
+        remainingSeen.push(response.headers.get("x-rate-limit-remaining"));
+      },
+    });
+    expect(lastRequest().headers).toMatchObject({ "x-client": "default", "x-trace": "call", "x-request-id": "from-options" });
+    expect(remainingSeen).toEqual(["41"]);
+
+    const optionsSeen: unknown[] = [];
+    const custom = new client.PetsService({ send: async (request: { options?: unknown }) => {
+      optionsSeen.push(request.options);
+      return JSON.parse(wirePetText);
+    } });
+    await custom.getPet({ petId: 1 }, { timeout: 5 });
+    await custom.getPet({ petId: 1 });
+    expect(optionsSeen).toEqual([{ timeout: 5 }, undefined]);
+  });
+
+  test("timeout and signal: a slow answer fails with TimeoutError, an aborted call with the abort reason", async () => {
+    const { client } = await generateClient("test/fixtures/petstore-3.0.yaml", "options-abort");
+    const pets = new client.PetsService({ send: client.createFetchSend({ baseUrl, timeout: 50 }) });
+    const timedOut = await pets.getPet({ petId: "slow" }).catch((caught: unknown) => caught);
+    expect((timedOut as Error).name).toBe("TimeoutError");
+    // The call's own timeout overrides the client's.
+    expect((await pets.getPet({ petId: "slow" }, { timeout: 2000 })).name).toBe("Rex");
+
+    const controller = new AbortController();
+    controller.abort(new Error("user left the page"));
+    await expect(pets.getPet({ petId: 7 }, { signal: controller.signal })).rejects.toThrow("user left the page");
+  });
+
+  test("retry: idempotent requests repeat on 503 honoring Retry-After; POST and retry: false do not", async () => {
+    const { client } = await generateClient("test/fixtures/petstore-3.0.yaml", "options-retry");
+    const pets = new client.PetsService({ send: client.createFetchSend({ baseUrl, retry: { retries: 2, delay: 1 } }) });
+    expect((await pets.getPet({ petId: "flaky-get" })).name).toBe("Rex");
+    expect(requestsTo("/pets/flaky-get")).toHaveLength(3);
+
+    const noRetry = await pets.getPet({ petId: "flaky-off" }, { retry: false }).catch((caught: unknown) => caught);
+    expect(noRetry).toMatchObject({ status: 503, operationId: "getPet" });
+    expect(requestsTo("/pets/flaky-off")).toHaveLength(1);
+
+    const before = requestsTo("/pets").length;
+    const post = await pets.createPet({ name: "Rex", status: "available" }, { headers: { "x-fail": "503" } }).catch((caught: unknown) => caught);
+    expect(post).toBeInstanceOf(client.ApiError);
+    expect(requestsTo("/pets").length - before).toBe(1);
+    expect((post as Error).message).toStartWith("createPet: ");
+  });
+
+  test("retry: network errors are retried with backoff, then thrown", async () => {
+    const { client } = await generateClient("test/fixtures/petstore-3.0.yaml", "options-retry-network");
+    let attempts = 0;
+    const failingFetch = async () => {
+      attempts++;
+      throw new TypeError("connection refused");
+    };
+    const pets = new client.PetsService({ send: client.createFetchSend({ baseUrl, fetch: failingFetch, retry: { retries: 3, delay: 1 } }) });
+    await expect(pets.getPet({ petId: 7 })).rejects.toThrow("connection refused");
+    expect(attempts).toBe(4);
+  });
+
+  // Regression: cancelling a body that middleware left locked rejected, so a retryable 503 was thrown instead of retried.
+  test("retry: a busy answer whose body middleware keeps locked is still retried", async () => {
+    const { client } = await generateClient("test/fixtures/petstore-3.0.yaml", "options-retry-locked-body");
+    const middleware = [
+      {
+        onResponse: (response: Response) => {
+          if (response.status === 503) {
+            response.body?.getReader();
+          }
+        },
+      },
+    ];
+    const pets = new client.PetsService({ send: client.createFetchSend({ baseUrl, middleware, retry: { retries: 2, delay: 1 } }) });
+    expect((await pets.getPet({ petId: "flaky-locked" })).name).toBe("Rex");
+    expect(requestsTo("/pets/flaky-locked")).toHaveLength(3);
+  });
+
+  test("middleware: onRequest replaces the request per attempt, onResponse sees every answer in order", async () => {
+    const { client } = await generateClient("test/fixtures/petstore-3.0.yaml", "options-middleware");
+    const events: string[] = [];
+    let token = 0;
+    const middleware = [
+      {
+        onRequest: (request: Request, details: { operationId: string }) => {
+          token++;
+          events.push(`request ${details.operationId}`);
+          const headers = new Headers(request.headers);
+          headers.set("authorization", `Bearer ${token}`);
+          return new Request(request, { headers });
+        },
+      },
+      { onResponse: (response: Response) => void events.push(`response ${response.status}`) },
+    ];
+    const pets = new client.PetsService({ send: client.createFetchSend({ baseUrl, middleware, retry: { retries: 2, delay: 1 } }) });
+    await pets.getPet({ petId: "flaky-middleware" });
+    expect(events).toEqual(["request getPet", "response 503", "request getPet", "response 503", "request getPet", "response 200"]);
+    expect(lastRequest().headers.authorization).toBe("Bearer 3");
+  });
+});
+
+describe("typed errors", () => {
+  test("isApiError checks the operation at runtime and exposes the declared status and body", async () => {
+    const { client } = await generateClient("test/fixtures/errors-3.1.yaml", "errors-live");
+    const api = client.createClient({ baseUrl });
+    const missing = await api.things.getThing({ id: "missing" }).catch((caught: unknown) => caught);
+    expect(client.isApiError(missing, "getThing")).toBe(true);
+    expect(missing).toMatchObject({ status: 404, body: { code: "missing" }, operationId: "getThing" });
+    expect(client.isApiError(missing, "putThing")).toBe(false);
+    const invalid = await api.things.getThing({ id: "bad id" }).catch((caught: unknown) => caught);
+    expect(invalid).toMatchObject({ status: 422, body: { fields: ["id"] } });
+    expect(client.isApiError(new Error("network down"), "getThing")).toBe(false);
+  });
+
+  test("the status narrows the body type; undeclared statuses and operationIds do not compile; runtime names never clash with schemas", async () => {
+    const { files } = await generateClient("test/fixtures/errors-3.1.yaml", "errors-types");
+    const usage = `import { createClient, isApiError } from './index.js';
+export async function use(): Promise<void> {
+    const api = createClient({ baseUrl: 'http://localhost' });
+    try {
+        await api.things.getThing({ id: '1' });
+    } catch (error) {
+        if (isApiError(error, 'getThing')) {
+            if (error.status === 404) {
+                const code: string = error.body.code;
+                void code;
+            } else {
+                const fields: string[] = error.body.fields;
+                void fields;
+            }
+            // @ts-expect-error 418 is not a declared status of getThing
+            void (error.status === 418);
+        }
+        if (isApiError(error, 'putThing')) {
+            const message: string = error.body.message;
+            const status: number = error.status;
+            void [message, status];
+        }
+        // @ts-expect-error no such operationId
+        void isApiError(error, 'getNothing');
+    }
+}
+`;
+    expect(typeCheck(files, "errors-types", { "usage.ts": usage })).toEqual([]);
+  });
+});
+
 describe("generated service files", () => {
   // Regression: a union response with a transformed member made the service import its validators twice
   // (once for the response validator, once for union routing), found by make e2e on the Jira spec.
@@ -225,7 +437,7 @@ export async function use(): Promise<void> {
 describe("generated service types", () => {
   test("transform: true switches the result types; mixing them up does not compile", async () => {
     const { files } = await generateClient("test/fixtures/petstore-3.0.yaml", "services-types", { naming: { properties: "camelCase" } });
-    const usage = `import { PetsService, createFetchSend } from './index.js';
+    const usage = `import { PetsService, createClient, createFetchSend, type RequestOptions } from './index.js';
 
 const send = createFetchSend({ baseUrl: 'http://localhost' });
 export async function wire(): Promise<void> {
@@ -247,6 +459,18 @@ export async function app(): Promise<void> {
     // @ts-expect-error a path parameter is required
     await pets.getPet();
     void [when, id];
+}
+export async function client(): Promise<void> {
+    const api = createClient({ transform: true, timeout: 1000, retry: 2, init: { credentials: 'include' } });
+    const pet = await api.pets.getPet({ petId: 1 }, { signal: AbortSignal.timeout(100), headers: { 'x-a': 'b' }, retry: false });
+    const when: Date = pet.createdAt;
+    const wirePet = await createClient().pets.getPet({ petId: 1 });
+    const text: string = wirePet.created_at;
+    const options: RequestOptions = { timeout: 5 };
+    await api.pets.listPets(undefined, undefined, options);
+    // @ts-expect-error unknown per-call option
+    await api.pets.getPet({ petId: 1 }, { unknownOption: true });
+    void [when, text];
 }
 `;
     expect(typeCheck(files, "services-types", { "usage.ts": usage })).toEqual([]);

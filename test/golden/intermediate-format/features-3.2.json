@@ -6,6 +6,7 @@
     "title": "Features 3.2",
     "version": "1.0.0"
   },
+  "servers": [],
   "declarations": [
     {
       "name": "Item",
@@ -172,6 +173,7 @@
   "services": [
     {
       "name": "SearchService",
+      "property": "search",
       "folder": "search",
       "operations": [
         {

@@ -6,7 +6,7 @@ import { camel, kebab, pascal } from "./naming.ts";
 import { deref, escapePointerToken, isRef, mergePathItem, refPointer, resolve, unescapePointerToken } from "./refs.ts";
 import type {
   Body, Constraints, Declaration, DeclarationKind, Diagnostic, Discriminator, IntermediateFormat, Operation, Parameter, ParameterGroup,
-  ParameterLocation, Property, Response, Scalar, Service, TypeNode,
+  ParameterLocation, Property, Response, Scalar, Server, ServerVariable, Service, TypeNode,
 } from "./types.ts";
 
 // The ONE module that knows how OpenAPI 3.0, 3.1 and 3.2 differ. Everything after it sees only the intermediate format.
@@ -59,11 +59,37 @@ export function normalize(document: JsonObject, version: OpenApiVersion, sourceP
       version: String(info.version ?? ""),
       ...optionalText("description", info.description),
     },
+    servers: normalizeServers(document.servers),
     declarations: [...context.declarations.values()],
     services,
     hooks: {},
     warnings: context.warnings,
   };
+}
+
+/** Top-level servers as plain data; the spec validation already checked their shape. */
+function normalizeServers(servers: unknown): Server[] {
+  if (!Array.isArray(servers)) {
+    return [];
+  }
+  const result: Server[] = [];
+  for (const server of servers as JsonObject[]) {
+    const normalizedServer: Server = { url: String(server.url), ...optionalText("description", server.description) };
+    const variables = (server.variables ?? {}) as Record<string, JsonObject>;
+    const variableEntries = Object.entries(variables);
+    if (variableEntries.length > 0) {
+      normalizedServer.variables = {};
+      for (const [variableName, variable] of variableEntries) {
+        const normalizedVariable: ServerVariable = { default: String(variable.default), ...optionalText("description", variable.description) };
+        if (Array.isArray(variable.enum)) {
+          normalizedVariable.enum = variable.enum.map((value: unknown) => String(value));
+        }
+        normalizedServer.variables[variableName] = normalizedVariable;
+      }
+    }
+    result.push(normalizedServer);
+  }
+  return result;
 }
 
 function componentPointer(schemaKey: string): string {
@@ -491,6 +517,7 @@ function normalizeServices(context: NormalizeContext): Service[] {
   const tags = [...operationsByTag.keys()].sort((first, second) => tagRank(tagOrder, first) - tagRank(tagOrder, second));
   const services: Service[] = [];
   const tagByServiceName = new Map<string, string>();
+  const tagByProperty = new Map<string, string>();
   for (const tag of tags) {
     const name = serviceName(tag);
     const clashingTag = tagByServiceName.get(name.toLowerCase());
@@ -498,10 +525,17 @@ function normalizeServices(context: NormalizeContext): Service[] {
       throw new Error(`tags "${clashingTag}" and "${tag}" both map to service ${name}; rename one of them`);
     }
     tagByServiceName.set(name.toLowerCase(), tag);
+    const property = serviceProperty(name);
+    const tagWithProperty = tagByProperty.get(property);
+    if (tagWithProperty !== undefined) {
+      throw new Error(`tags "${tagWithProperty}" and "${tag}" both map to client property ${property}; rename one of them`);
+    }
+    tagByProperty.set(property, tag);
     const operations = operationsByTag.get(tag)!;
     makeMethodNamesUnique(operations);
     services.push({
       name,
+      property,
       folder: tag === "" ? "default" : kebab(tag),
       ...optionalText("description", tagDescriptions.get(tag)),
       operations,
@@ -531,7 +565,17 @@ function checkExportedNames(declarations: Declaration[], services: Service[]): v
   }
   for (const service of services) {
     claim(service.name, `the service of tag folder "${service.folder}"`);
+    claim(`${service.name}Errors`, `the error types of service ${service.name}`);
   }
+}
+
+/** `PetsService` → `pets`, `DefaultService` → `default`: the class name without its suffix, first letter lowercased. */
+function serviceProperty(name: string): string {
+  const stem = name.replace(/Service$/, "");
+  if (stem === "") {
+    return "service";
+  }
+  return stem.charAt(0).toLowerCase() + stem.slice(1);
 }
 
 function serviceName(tag: string): string {

@@ -111,7 +111,7 @@ describe("runtime", () => {
     const { createFetchSend } = await import("../src/emit/runtime/fetch-send.ts");
     const urls: string[] = [];
     const fetchStub = (async (input: string | URL | Request) => {
-      urls.push(String(input));
+      urls.push(input instanceof Request ? input.url : String(input));
       return new Response("null", { headers: { "content-type": "application/json" } });
     }) as typeof fetch;
     const send = createFetchSend({ baseUrl: "https://api.test", fetch: fetchStub });
