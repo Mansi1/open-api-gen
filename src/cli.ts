@@ -5,7 +5,7 @@
 import { writeFile } from "node:fs/promises";
 import { parseArgs } from "node:util";
 import { buildIntermediateFormat, prepareDocument } from "./intermediate-format/build.ts";
-import { loadConfig, type ConfigInput } from "./intermediate-format/config.ts";
+import { loadConfig, parseTransformerFlag, type ConfigInput } from "./intermediate-format/config.ts";
 import { generate, VERSION } from "./index.ts";
 
 const USAGE = `Usage: open-api-gen <input> -o <output-directory> [options]
@@ -20,6 +20,9 @@ Options:
       --exclude-tag <tag>            drop operations with this tag (repeatable)
       --operation-id <id>            keep only this operation (repeatable)
       --naming <preserve|camelCase>  property names in App types (default preserve)
+      --transformer <key>=<type>,<import>,<decode>,<encode>
+                                     add a transformer (repeatable); <key> is format:<name> or
+                                     schema:<Name>, <import> is relative to the output directory
       --no-validate-spec             skip validating the input against the OpenAPI schema
       --force                        write into a directory with files open-api-gen did not create
       --emit-intermediate-format <file>
@@ -51,6 +54,7 @@ async function main(argv: string[]): Promise<number> {
       "exclude-tag": { type: "string", multiple: true },
       "operation-id": { type: "string", multiple: true },
       naming: { type: "string" },
+      transformer: { type: "string", multiple: true },
       "no-validate-spec": { type: "boolean" },
       force: { type: "boolean" },
       "emit-intermediate-format": { type: "string" },
@@ -95,6 +99,10 @@ async function main(argv: string[]): Promise<number> {
   }
   if (values.naming !== undefined) {
     flags.naming = { properties: values.naming as "preserve" | "camelCase" };
+  }
+  if (values.transformer !== undefined) {
+    const transformerEntries = values.transformer.map((transformerFlag) => parseTransformerFlag(transformerFlag));
+    flags.transformers = Object.fromEntries(transformerEntries);
   }
   if (values["no-validate-spec"] === true) {
     flags.validateSpec = false;

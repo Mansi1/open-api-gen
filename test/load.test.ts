@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
-import { loadConfig } from "../src/intermediate-format/config.ts";
+import { loadConfig, parseTransformerFlag } from "../src/intermediate-format/config.ts";
 import { load } from "../src/intermediate-format/load.ts";
 
 const fixturePath = (name: string) => join(import.meta.dir, "fixtures", name);
@@ -71,5 +71,31 @@ describe("loadConfig", () => {
     await expect(loadConfig(undefined, { output: "b" })).rejects.toThrow('"input" is required');
     const badTransformer = { uuid: { type: "Uuid", import: "./uuid", decode: "decodeUuid", encode: "encodeUuid" } };
     await expect(loadConfig(undefined, { input: "a", output: "b", transformers: badTransformer })).rejects.toThrow('transformer key "uuid" must start with "format:" or "schema:"');
+  });
+});
+
+describe("parseTransformerFlag", () => {
+  test("splits the key from type, import, decode and encode", () => {
+    expect(parseTransformerFlag("schema:Filter=Filter,../hooks/filter.ts,decodeFilter,encodeFilter")).toEqual([
+      "schema:Filter",
+      { type: "Filter", import: "../hooks/filter.ts", decode: "decodeFilter", encode: "encodeFilter" },
+    ]);
+  });
+
+  test("rejects a flag without a key or with the wrong number of fields", () => {
+    expect(() => parseTransformerFlag("Filter,./filter.ts,decodeFilter,encodeFilter")).toThrow("--transformer");
+    expect(() => parseTransformerFlag("schema:Filter=Filter,./filter.ts")).toThrow("--transformer");
+  });
+
+  test("a flag transformer replaces the file transformer with its key and keeps the others", async () => {
+    const configPath = scratchPath("config-transformers/open-api-gen.config.json");
+    const fileTransformers = {
+      "schema:Filter": { type: "Filter", import: "./old.ts", decode: "decodeOld", encode: "encodeOld" },
+      "format:decimal": { type: "Decimal", import: "./decimal.ts", decode: "toDecimal", encode: "fromDecimal" },
+    };
+    await Bun.write(configPath, JSON.stringify({ input: "spec.yaml", output: "generated", transformers: fileTransformers }));
+    const [flagKey, flagTransformer] = parseTransformerFlag("schema:Filter=Filter,./new.ts,decodeNew,encodeNew");
+    const config = await loadConfig(configPath, { transformers: { [flagKey]: flagTransformer } });
+    expect(config.transformers).toEqual({ "schema:Filter": flagTransformer, "format:decimal": fileTransformers["format:decimal"] });
   });
 });

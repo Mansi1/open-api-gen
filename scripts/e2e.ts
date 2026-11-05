@@ -86,7 +86,9 @@ for (const example of examples) {
 }
 
 // 4. The configured client (overlay + filter + camelCase + Date + Decimal hook), compiled with the consumer program.
-const configOutput = run("node", [cli, "--config", join(repositoryRoot, "input", "open-api-gen.config.json")], repositoryRoot);
+// VERIFIED: input/smoke.ts checks the Decimal hook, which comes from --transformer, so flag and config file merge in one run.
+const decimalTransformer = "format:int64=Decimal,../../../input/hooks/decimal.ts,toDecimal,fromDecimal";
+const configOutput = run("node", [cli, "--config", join(repositoryRoot, "input", "open-api-gen.config.json"), "--transformer", decimalTransformer], repositoryRoot);
 const configSummary = configOutput.split("\n").find((line) => line.includes(" INFO generated ")) ?? configOutput.trim();
 log("INFO", `petstore-app (overlay, filter, camelCase, Date, Decimal hook): ${configSummary.replace(/^\S+ INFO /, "")}`);
 const smokeDirectory = join(outputDirectory, "smoke");

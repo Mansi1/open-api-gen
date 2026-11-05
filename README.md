@@ -20,6 +20,7 @@ The package is not on npm yet. Until it is, build a tarball with `bun run build 
 | `--overlay <file>` | Apply an [OpenAPI Overlay](https://spec.openapis.org/overlay/v1.2.0.html) before generating; repeatable |
 | `--tag <tag>`, `--exclude-tag <tag>`, `--operation-id <id>` | Generate only part of the API; repeatable |
 | `--naming <preserve\|camelCase>` | Property names in App types (default `preserve`) |
+| `--transformer <key>=<type>,<import>,<decode>,<encode>` | Add a [transformer](#config-file), e.g. `schema:Filter=Filter,../hooks/filter.ts,decodeFilter,encodeFilter`; repeatable, replaces a config file transformer with the same key |
 | `--no-validate-spec` | Skip validating the input document |
 | `--force` | Write into a directory that holds files open-api-gen did not create |
 | `--emit-intermediate-format <file>` | Also write the intermediate format as JSON (see [ARCH.md](ARCH.md)) |

@@ -68,6 +68,8 @@ export async function loadConfig(configPath: string | undefined, flags: ConfigIn
   const naming = { ...fromFile.naming, ...withoutUndefined(flags.naming ?? {}) };
   const formats = { ...fromFile.formats, ...withoutUndefined(flags.formats ?? {}) };
   const filter = { ...fromFile.filter, ...withoutUndefined(flags.filter ?? {}) };
+  // A flag transformer replaces a file transformer with the same key; the others from the file stay.
+  const transformers = { ...fromFile.transformers, ...flags.transformers };
 
   if (merged.input === undefined) {
     throw new Error('config: "input" is required');
@@ -75,7 +77,6 @@ export async function loadConfig(configPath: string | undefined, flags: ConfigIn
   if (merged.output === undefined) {
     throw new Error('config: "output" is required');
   }
-  const transformers = merged.transformers ?? {};
   checkTransformers(transformers);
 
   return {
@@ -173,6 +174,22 @@ function checkTransformers(transformers: Record<string, Transformer>): void {
       }
     }
   }
+}
+
+/**
+ * Parses the CLI form of one transformer, `<format:name|schema:Name>=<type>,<import>,<decode>,<encode>`,
+ * the four fields in the order of a config file entry. Commas rather than a JSON value, because JSON needs
+ * shell quoting on every platform, while type names, identifiers and import paths practically never contain commas.
+ * VERIFIED: scripts/e2e.ts generates the smoke client's Decimal hook through this flag.
+ */
+export function parseTransformerFlag(flag: string): [string, Transformer] {
+  const separatorIndex = flag.indexOf("=");
+  const fields = flag.slice(separatorIndex + 1).split(",");
+  if (separatorIndex <= 0 || fields.length !== 4) {
+    throw new Error(`--transformer "${flag}" must look like <format:name|schema:Name>=<type>,<import>,<decode>,<encode>`);
+  }
+  const [type, importPath, decode, encode] = fields as [string, string, string, string];
+  return [flag.slice(0, separatorIndex), { type, import: importPath, decode, encode }];
 }
 
 function toList(value: string | string[] | undefined): string[] {
