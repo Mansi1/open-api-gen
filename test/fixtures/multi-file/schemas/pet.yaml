@@ -1,0 +1,10 @@
+allOf:
+  - $ref: ./new-pet.yaml
+  - type: object
+    required: [id]
+    properties:
+      id: { type: integer }
+      owner:
+        $ref: ./owner.yaml
+example:
+  $ref: this is example data, not a reference

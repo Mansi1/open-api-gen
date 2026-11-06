@@ -1,0 +1,29 @@
+openapi: 3.1.1
+info:
+  title: Multi-file
+  version: 1.0.0
+paths:
+  /pets:
+    $ref: ./paths/pets.yaml
+  /pets/{petId}:
+    get:
+      operationId: getPet
+      tags: [pets]
+      parameters:
+        - $ref: ./parameters.yaml#/petId
+      responses:
+        "200":
+          description: The pet
+          content:
+            application/json:
+              schema:
+                $ref: ./schemas/pet.yaml
+        "404":
+          $ref: ./responses.yaml#/NotFound
+components:
+  schemas:
+    Error:
+      $ref: ./schemas/error.yaml
+    ErrorCode:
+      type: string
+      enum: [not_found, invalid]

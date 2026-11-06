@@ -23,6 +23,8 @@ Options:
       --transformer <key>=<type>,<import>,<decode>,<encode>
                                      add a transformer (repeatable); <key> is format:<name> or
                                      schema:<Name>, <import> is relative to the output directory
+      --ref-root <dir>               directory external $ref files may come from
+                                     (default: the input document's directory)
       --no-validate-spec             skip validating the input against the OpenAPI schema
       --force                        write into a directory with files open-api-gen did not create
       --emit-intermediate-format <file>
@@ -55,6 +57,7 @@ async function main(argv: string[]): Promise<number> {
       "operation-id": { type: "string", multiple: true },
       naming: { type: "string" },
       transformer: { type: "string", multiple: true },
+      "ref-root": { type: "string" },
       "no-validate-spec": { type: "boolean" },
       force: { type: "boolean" },
       "emit-intermediate-format": { type: "string" },
@@ -103,6 +106,9 @@ async function main(argv: string[]): Promise<number> {
   if (values.transformer !== undefined) {
     const transformerEntries = values.transformer.map((transformerFlag) => parseTransformerFlag(transformerFlag));
     flags.transformers = Object.fromEntries(transformerEntries);
+  }
+  if (values["ref-root"] !== undefined) {
+    flags.refRoot = values["ref-root"];
   }
   if (values["no-validate-spec"] === true) {
     flags.validateSpec = false;

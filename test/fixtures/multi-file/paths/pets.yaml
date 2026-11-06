@@ -1,0 +1,28 @@
+get:
+  operationId: listPets
+  tags: [pets]
+  responses:
+    "200":
+      description: All pets
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../schemas/pet.yaml
+post:
+  operationId: createPet
+  tags: [pets]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../schemas/new-pet.yaml
+  responses:
+    "201":
+      description: Created
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/pet.yaml

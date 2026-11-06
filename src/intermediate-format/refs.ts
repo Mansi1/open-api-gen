@@ -1,9 +1,9 @@
-// Local `$ref` resolution only. Remote references are rejected (UnsupportedRefError) instead of fetched, so the
-// generator never reads the network or files outside the inputs it was given.
+// Local `$ref` resolution. References to other files are bundled in before (bundle.ts), so only local ones reach
+// this module; URLs are rejected (UnsupportedRefError) instead of fetched, so the generator never reads the network.
 // VERIFIED: test/refs.test.ts checks that non-local refs raise UnsupportedRefError.
 export class UnsupportedRefError extends Error {
   constructor(readonly ref: string) {
-    super(`unsupported $ref "${ref}": only local references (#/...) are supported`);
+    super(`unsupported $ref "${ref}": URLs are not fetched, because open-api-gen makes no network requests; download the file and reference it by a relative path`);
     this.name = "UnsupportedRefError";
   }
 }

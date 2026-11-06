@@ -1,0 +1,5 @@
+petId:
+  name: petId
+  in: path
+  required: true
+  schema: { type: integer }

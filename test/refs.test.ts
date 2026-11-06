@@ -31,7 +31,7 @@ describe("resolve", () => {
 
   test("external references are unsupported", () => {
     expect(() => resolve(document, "other.yaml#/components/schemas/External")).toThrow(UnsupportedRefError);
-    expect(() => resolve(document, "https://example.com/schema.json")).toThrow("only local references (#/...) are supported");
+    expect(() => resolve(document, "https://example.com/schema.json")).toThrow("URLs are not fetched");
   });
 });
 

@@ -1,5 +1,6 @@
 // The Stage 1 pipeline in one place, so its order (overlays before validation, filtering last) is explicit.
 // VERIFIED: test/spec-transforms.test.ts covers the overlay → validate → filter order.
+import { bundle } from "./bundle.ts";
 import type { Config } from "./config.ts";
 import { filterSpec } from "./filter.ts";
 import { load, readStructuredFile, type OpenApiVersion } from "./load.ts";
@@ -12,13 +13,14 @@ import { stripRefSiblings, validateSpec } from "./validate-spec.ts";
 export type PreparedDocument = { document: Record<string, unknown>; version: OpenApiVersion; warnings: Diagnostic[] };
 
 /**
- * The OpenAPI document the client is generated from: overlays applied, 3.0 `$ref` siblings dropped, validated
+ * The OpenAPI document the client is generated from: external references bundled in (so overlays and validation
+ * see one document), overlays applied, 3.0 `$ref` siblings dropped, validated
  * (overlays first, because the result is what must be valid), then filtered (filtering only removes).
  */
 export async function prepareDocument(config: Config): Promise<PreparedDocument> {
   const loaded = await load(config.input);
   const warnings: Diagnostic[] = [];
-  let document = loaded.document;
+  let document = await bundle(loaded.document, config.input, config.refRoot);
   for (const overlayPath of config.overlay) {
     const overlaid = applyOverlay(document, await readStructuredFile(overlayPath), overlayPath);
     document = overlaid.document;

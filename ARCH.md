@@ -7,7 +7,7 @@ flowchart LR
   spec[OpenAPI document<br/>JSON or YAML] --> prepare
   config[config file<br/>and flags] --> prepare
   subgraph stage1 [Stage 1: src/intermediate-format]
-    prepare[load → overlays → strip 3.0 $ref siblings → validate → filter] --> normalize[normalize<br/>3.0 / 3.1 / 3.2 → one model]
+    prepare[load → bundle external $refs → overlays → strip 3.0 $ref siblings → validate → filter] --> normalize[normalize<br/>3.0 / 3.1 / 3.2 → one model]
     normalize --> plan[plan transforms<br/>codecs, renames, flags]
   end
   plan --> format[(intermediate format<br/>plain JSON)]
@@ -35,6 +35,7 @@ The alternative, emitting code while walking the document, mixes the 3.0/3.1/3.2
 |---|---|
 | `config.ts` | the config file, flags, defaults and their validation |
 | `load.ts` | reading JSON/YAML and detecting the 3.x version |
+| `bundle.ts` | external `$ref`s: hoisting referenced files into `components`, the reference-root check |
 | `overlay.ts` | OpenAPI Overlay 1.0 to 1.2 (RFC 9535 JSONPath via `jsonpath-rfc9535`) |
 | `validate-spec.ts` | validation against the official schemas, and stripping 3.0 `$ref` siblings |
 | `filter.ts` | operation filters and pruning of unused components |
@@ -43,6 +44,8 @@ The alternative, emitting code while walking the document, mixes the 3.0/3.1/3.2
 | `naming.ts` | PascalCase, camelCase and kebab-case rules |
 | `transform-plan.ts` | codecs, property renames, and the `transformed` and `runtime` flags |
 | `build.ts` | the Stage 1 pipeline |
+
+**Bundling first.** External references are bundled into one document right after loading. Overlays, validation, filtering, normalize and the written `open-api.json` therefore see a single document with local references only, and `refs.ts` stays a local resolver. A target referenced from a schema, parameter, response or similar position is hoisted into `components` once, named after its file or pointer. Resolving references in place instead would give a schema used in ten places ten inline copies, and ten generated types named after their positions.
 
 VERIFIED: spec validation uses `@hyperjump/json-schema`, because ajv 8.20 rejected valid 3.1 and 3.2 documents. The OpenAPI `schema-base` schemas rely on `$dynamicRef`, and in a probe ajv reported `unevaluatedProperties` failures for a minimal valid document, which hyperjump accepted.
 
@@ -77,4 +80,5 @@ VERIFIED: lossless int64 parsing relies on the JSON.parse reviver's source text,
 
 - **Untrusted input:** the OpenAPI document, overlays and config are untrusted input. Every identifier, string literal, comment and import path from them reaches generated code through `src/emit/names.ts` (`quote`, `propertyKey`, `docComment`, `identifier`); `test/names.test.ts` parses the output of hostile names and descriptions and checks that each stays one literal, member or comment. Spec values that are not numbers, booleans or strings are dropped from validator constraints instead of being pasted into code.
 - **No data loss:** `src/write.ts` writes only into an empty directory or one holding earlier open-api-gen output. It recognizes that output by the generated-file header and by `version.json`, deletes only stale files it created itself, and stops at any other file unless `--force` is given; with `--force` a hand-written file at a generated path is overwritten, never one elsewhere. A symbolic link inside the directory always stops the run, so nothing outside it is written.
+- **Reference root:** external `$ref` files must lie in the input document's directory or below, or below `--ref-root` when given. The referenced files end up in the written `open-api.json`, so an untrusted document must not pull arbitrary local files (`../../.ssh/…`) into output that may be published.
 - **No network or secrets:** the generator makes no network requests and reads no environment variables; the generated `createFetchSend` sends only the headers the caller configures, and middleware runs only the code the caller passes in.

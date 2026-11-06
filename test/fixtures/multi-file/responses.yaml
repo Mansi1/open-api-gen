@@ -1,0 +1,6 @@
+NotFound:
+  description: No such pet
+  content:
+    application/json:
+      schema:
+        $ref: ./openapi.yaml#/components/schemas/Error

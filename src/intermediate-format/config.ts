@@ -19,6 +19,8 @@ export type Config = {
   transformers: Record<string, Transformer>;
   /** Allow writing into an output directory that contains files this generator did not create. */
   force: boolean;
+  /** Directory external `$ref` files must lie in; undefined = the input document's directory. */
+  refRoot?: string;
 };
 
 /** What a config file or CLI flags may contain: every key optional, nested objects partial. */
@@ -32,6 +34,7 @@ export type ConfigInput = {
   formats?: Partial<Config["formats"]>;
   transformers?: Record<string, Transformer>;
   force?: boolean;
+  refRoot?: string;
 };
 
 type ValueKind = "boolean" | "string" | "strings" | "object" | readonly string[];
@@ -54,6 +57,7 @@ const ALLOWED_KEYS: Record<string, ValueKind> = {
   "formats.int64": ["bigint", "number"],
   transformers: "object",
   force: "boolean",
+  refRoot: "string",
 };
 
 /** The one owner of configuration: reads the optional config file, applies flags over it, validates, fills defaults. */
@@ -93,6 +97,7 @@ export async function loadConfig(configPath: string | undefined, flags: ConfigIn
     },
     transformers,
     force: merged.force ?? false,
+    ...(merged.refRoot !== undefined ? { refRoot: merged.refRoot } : {}),
   };
 }
 
@@ -112,6 +117,9 @@ async function readConfigFile(configPath: string): Promise<ConfigInput> {
   }
   if (fromFile.output !== undefined) {
     fromFile.output = resolve(configDirectory, fromFile.output);
+  }
+  if (fromFile.refRoot !== undefined) {
+    fromFile.refRoot = resolve(configDirectory, fromFile.refRoot);
   }
   if (fromFile.overlay !== undefined) {
     fromFile.overlay = toList(fromFile.overlay).map((overlayPath) => resolve(configDirectory, overlayPath));

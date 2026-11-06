@@ -85,6 +85,19 @@ for (const example of examples) {
   log("INFO", `${name}: generated in ${generateMilliseconds} ms (${warnings} warnings, ${fileCount} entries), tsc --strict ok in ${checkMilliseconds} ms`);
 }
 
+// 3b. A multi-file document: external $refs bundled by the installed CLI, the reference root widened by --ref-root.
+const multiFileRoot = join(repositoryRoot, "test", "fixtures", "multi-file");
+const multiFileDirectory = join(clientsDirectory, "multi-file");
+const multiFileOutput = run("node", [cli, join(multiFileRoot, "openapi.yaml"), "-o", multiFileDirectory, "--ref-root", join(repositoryRoot, "test", "fixtures")], repositoryRoot);
+const multiFileConfigPath = join(outputDirectory, "tsconfig.multi-file.json");
+writeJson(multiFileConfigPath, { compilerOptions: { ...STRICT_OPTIONS, noEmit: true, typeRoots: [join(consumerDirectory, "node_modules", "@types")] }, include: ["clients/multi-file/**/*.ts"] });
+run("node", [tsc, "-p", multiFileConfigPath], consumerDirectory);
+if (!readdirSync(join(multiFileDirectory, "interface", "components")).includes("Owner.ts")) {
+  throw new Error("multi-file: the schema from schemas/owner.yaml was not bundled into interface/components/Owner.ts");
+}
+const multiFileSummary = multiFileOutput.split("\n").find((line) => line.includes(" INFO generated ")) ?? multiFileOutput.trim();
+log("INFO", `multi-file (external $refs, --ref-root): ${multiFileSummary.replace(/^\S+ INFO /, "")}, tsc --strict ok`);
+
 // 4. The configured client (overlay + filter + camelCase + Date + Decimal hook), compiled with the consumer program.
 // VERIFIED: input/smoke.ts checks the Decimal hook, which comes from --transformer, so flag and config file merge in one run.
 const decimalTransformer = "format:int64=Decimal,../../../input/hooks/decimal.ts,toDecimal,fromDecimal";

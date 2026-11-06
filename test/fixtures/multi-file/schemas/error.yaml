@@ -1,0 +1,6 @@
+type: object
+required: [code, message]
+properties:
+  code:
+    $ref: ../openapi.yaml#/components/schemas/ErrorCode
+  message: { type: string }

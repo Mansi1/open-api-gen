@@ -51,3 +51,7 @@ Wrap: EVERY lead → test | .agents/VERIFY.py rule | one MEMORY line with BC, th
 2026-11-05T23:53:51Z s=f7b31668 FINDING src/emit/runtime/validation.ts:object required check learn=test: test/services.test.ts request validation read/write-only test fails without the fix (probe 2026-11-06)
 2026-11-06T00:12:44Z s=f7b31668 DONE fp=a2a2508880fe cov=77.0% paths=ARCH.md,README.md,input/open-api-gen.config.json,input/smoke.ts(+36)
 2026-11-06T00:12:44Z s=f7b31668 FINDING src/emit/services.ts:directionalType (first version, replaced by src/emit/read-write.ts) learn=test: make e2e generates Stripe and GitHub and times each; a regression hangs it
+2026-11-06T00:42:53Z s=f7b31668 DONE fp=cd7b22b5f69a cov=77.0% paths=ARCH.md,README.md,input/open-api-gen.config.json,input/smoke.ts(+49)
+2026-11-06T00:42:53Z s=f7b31668 FINDING src/intermediate-format/bundle.ts:checkInsideRoot learn=test: test/bundle.test.ts 'files outside the reference root are refused...' includes the symlink case
+2026-11-06T00:42:53Z s=f7b31668 FINDING src/intermediate-format/bundle.ts:hasExternalReference learn=test: test/bundle.test.ts discriminator mapping test
+2026-11-06T00:42:53Z s=f7b31668 FINDING src/intermediate-format/bundle.ts:Bundler.walk arrays learn=none: found by reading; timing-dependent, not reproducible on demand

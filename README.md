@@ -21,6 +21,7 @@ The package is not on npm yet. Until it is, build a tarball with `bun run build 
 | `--tag <tag>`, `--exclude-tag <tag>`, `--operation-id <id>` | Generate only part of the API; repeatable |
 | `--naming <preserve\|camelCase>` | Property names in App types (default `preserve`) |
 | `--transformer <key>=<type>,<import>,<decode>,<encode>` | Add a [transformer](#config-file), e.g. `schema:Filter=Filter,../hooks/filter.ts,decodeFilter,encodeFilter`; repeatable, replaces a config file transformer with the same key |
+| `--ref-root <dir>` | Directory external `$ref` files may come from (default: the input document's directory) |
 | `--no-validate-spec` | Skip validating the input document |
 | `--force` | Write into a directory that holds files open-api-gen did not create |
 | `--emit-intermediate-format <file>` | Also write the intermediate format as JSON (see [ARCH.md](ARCH.md)) |
@@ -216,6 +217,7 @@ The generator writes only into a directory that is empty or holds its own earlie
   "output": "src/api",
   "validateSpec": true,
   "force": false,
+  "refRoot": ".",
   "overlay": ["overlays/rename.yaml"],
   "filter": { "tags": ["store"], "excludeTags": ["internal"], "operationIds": ["getOrderById"] },
   "naming": { "properties": "camelCase" },
@@ -227,7 +229,7 @@ The generator writes only into a directory that is empty or holds its own earlie
 }
 ```
 
-Paths in the file are relative to the file. Every key is optional except `input` and `output`; unknown keys are errors. The values shown for `validateSpec`, `force`, `naming` (`preserve` when absent) and `formats` are the defaults.
+Paths in the file are relative to the file. Every key is optional except `input` and `output`; unknown keys are errors. The values shown for `validateSpec`, `force`, `naming` (`preserve` when absent) and `formats` are the defaults. `refRoot` defaults to the input document's directory; the `.` above widens it to the config file's directory.
 
 **Transforms** apply to request and response bodies, never to parameters, and only when a client is created with `transform: true`:
 
@@ -236,6 +238,15 @@ Paths in the file are relative to the file. Every key is optional except `input`
 - `transformers`: your own conversions. `format:<name>` applies to every value with that format, `schema:<Name>` to one component. A schema transformer wins over a format transformer, which wins over the built-in `formats`. `import` is a package name or a path relative to the output directory; keep hook modules outside the output directory, because files there that open-api-gen did not create stop the run.
 
 **Filters** keep operations that have one of `tags`, that are listed in `operationIds` (when given), and that have none of `excludeTags`. Components that no kept operation reaches are removed.
+
+## Multi-file documents
+
+A document may reference other JSON or YAML files: `$ref: ./schemas/pet.yaml` or `$ref: ./common.yaml#/Error`. open-api-gen bundles them into one document before anything else, so overlays and filters see the bundled document. The written `open-api.json` and `open-api.yaml` are self-contained.
+
+- A referenced schema, parameter, response, request body, header, example, link or callback becomes a component, named after the pointer's last segment or the file name. `./schemas/pet.yaml` becomes the schema `pet` and the type `Pet`; colliding names get a number (`pet2`). A file referenced many times becomes one component.
+- A reference that is itself the definition, such as `components/schemas/Pet: { $ref: ./pet.yaml }` or a path item `/pets: { $ref: ./paths/pets.yaml }`, is replaced by the file's content.
+- Inside a referenced file, `#/…` points into that file. A reference back into the root document (`../openapi.yaml#/components/schemas/Error`) becomes a local one.
+- Referenced files must lie in the input document's directory or below. Pass `--ref-root` (config `refRoot`) to allow a wider directory, such as `../shared` in a monorepo. URLs are not fetched.
 
 ## Supported OpenAPI features
 
@@ -251,7 +262,7 @@ Validators check `type`, `enum`, `const`, `required`, `properties`, `additionalP
 **Not supported:**
 
 - Swagger 2.0 (convert it to 3.x first).
-- `$ref` to other files or URLs.
+- `$ref` to URLs (download the file and reference it by path).
 - Webhooks and callbacks.
 - JavaScript output.
 
