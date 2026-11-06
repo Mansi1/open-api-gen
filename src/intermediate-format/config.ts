@@ -1,10 +1,31 @@
 // The one owner of configuration. Unknown keys are errors rather than ignored, so a typo in a config file fails
 // loudly instead of silently generating a different client.
-// VERIFIED: test/review-regressions.test.ts covers unknown and prototype keys and the filter merge.
+// A config file is JSON, or a JS/TS module whose default export is the config: only a module can hold `serviceFor`.
+// VERIFIED: test/review-regressions.test.ts covers unknown and prototype keys and the filter merge;
+// test/service-for.test.ts covers module config files and serviceFor.
 import { readFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { dirname, extname, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 
 export type Transformer = { type: string; import: string; decode: string; encode: string };
+
+/** What `serviceFor` sees of one operation: the document's values, with the operationId the generator settled on. */
+export type OperationInfo = {
+  operationId: string;
+  /** Upper case, e.g. `GET`. */
+  method: string;
+  /** Templated path as in the document, e.g. `/pets/{petId}`. */
+  path: string;
+  tags: string[];
+  summary?: string;
+  deprecated: boolean;
+};
+
+/**
+ * Picks the service of one operation. The returned name is used like a tag: `"pet store"` becomes `PetStoreService`
+ * in `service/pet-store/`, `""` means the default service. `undefined` keeps the default rule, the first tag.
+ */
+export type ServiceFor = (operation: OperationInfo) => string | undefined;
 
 export type Config = {
   input: string;
@@ -21,6 +42,8 @@ export type Config = {
   force: boolean;
   /** Directory external `$ref` files must lie in; undefined = the input document's directory. */
   refRoot?: string;
+  /** Groups operations into services; undefined = by first tag. */
+  serviceFor?: ServiceFor;
 };
 
 /** What a config file or CLI flags may contain: every key optional, nested objects partial. */
@@ -35,9 +58,15 @@ export type ConfigInput = {
   transformers?: Record<string, Transformer>;
   force?: boolean;
   refRoot?: string;
+  serviceFor?: ServiceFor;
 };
 
-type ValueKind = "boolean" | "string" | "strings" | "object" | readonly string[];
+/** Returns its argument; gives a JS or TS config file type checking and completion. */
+export function defineConfig(config: ConfigInput): ConfigInput {
+  return config;
+}
+
+type ValueKind = "boolean" | "string" | "strings" | "object" | "function" | readonly string[];
 
 // Every allowed key, by dotted path. Anything else in a config file or in flags is an error.
 const ALLOWED_KEYS: Record<string, ValueKind> = {
@@ -58,6 +87,7 @@ const ALLOWED_KEYS: Record<string, ValueKind> = {
   transformers: "object",
   force: "boolean",
   refRoot: "string",
+  serviceFor: "function",
 };
 
 /** The one owner of configuration: reads the optional config file, applies flags over it, validates, fills defaults. */
@@ -98,15 +128,19 @@ export async function loadConfig(configPath: string | undefined, flags: ConfigIn
     transformers,
     force: merged.force ?? false,
     ...(merged.refRoot !== undefined ? { refRoot: merged.refRoot } : {}),
+    ...(merged.serviceFor !== undefined ? { serviceFor: merged.serviceFor } : {}),
   };
 }
 
 async function readConfigFile(configPath: string): Promise<ConfigInput> {
   let fromFile: ConfigInput;
   try {
-    fromFile = JSON.parse(await readFile(configPath, "utf8"));
+    fromFile = MODULE_EXTENSIONS.includes(extname(configPath)) ? await importConfigModule(configPath) : JSON.parse(await readFile(configPath, "utf8"));
   } catch (error) {
     throw new Error(`cannot read config ${configPath}: ${(error as Error).message}`);
+  }
+  if (typeof fromFile !== "object" || fromFile === null || Array.isArray(fromFile)) {
+    throw new Error(`config ${configPath} must contain an object`);
   }
   checkKeys(fromFile as Record<string, unknown>, "");
 
@@ -125,6 +159,20 @@ async function readConfigFile(configPath: string): Promise<ConfigInput> {
     fromFile.overlay = toList(fromFile.overlay).map((overlayPath) => resolve(configDirectory, overlayPath));
   }
   return fromFile;
+}
+
+// TypeScript needs Bun or Node.js 22.18 or later, which strip types without a flag.
+const MODULE_EXTENSIONS = [".js", ".mjs", ".cjs", ".ts", ".mts", ".cts"];
+
+/** Runs a JS or TS config file and returns its default export (awaited, so it may be a promise), as a fresh copy. */
+async function importConfigModule(configPath: string): Promise<ConfigInput> {
+  const module = await import(pathToFileURL(resolve(configPath)).href);
+  if (module.default === undefined) {
+    throw new Error("a JS or TS config file needs a default export");
+  }
+  const exported = await module.default;
+  // A copy, because relative paths are resolved in place below and the module object is shared by every import.
+  return typeof exported === "object" && exported !== null && !Array.isArray(exported) ? { ...exported } : exported;
 }
 
 function checkKeys(values: Record<string, unknown>, prefix: string): void {
@@ -159,6 +207,9 @@ function hasKind(value: unknown, kind: ValueKind): boolean {
   }
   if (kind === "object") {
     return typeof value === "object" && value !== null && !Array.isArray(value);
+  }
+  if (kind === "function") {
+    return typeof value === "function";
   }
   return kind.includes(value as string);
 }

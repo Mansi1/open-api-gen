@@ -6,7 +6,7 @@ A command-line tool and library that generates a typed TypeScript API client fro
 
 Hand-written API clients drift from the API they call. open-api-gen generates both the types and a client that runs: it sends requests the way the document describes them, can check every body against its schema, and converts values such as dates and 64-bit integers into JavaScript types. The client has no dependencies and runs in Node.js, Bun, Chromium, Firefox and WebKit.
 
-- One file per schema and one service class per tag, in the layout of st-open-api's generated clients (dist3), plus `createClient` for all services at once.
+- One file per schema and one service class per tag (or per group your own function picks), in the layout of st-open-api's generated clients (dist3), plus `createClient` for all services at once.
 - Wire types (exactly the JSON) or App types (`Date`, exact `bigint` for int64, camelCase names, your own converters), switched by one option.
 - Response and request validation against the document's schemas.
 - Timeouts, retries with backoff, middleware, per-call `AbortSignal`, and credentials from the document's security schemes.
@@ -45,7 +45,7 @@ appPet.created_at; // Date
 appPet.id;         // bigint, exact beyond 2^53
 ```
 
-`createClient` returns one property per service, named after its tag: `PetsService` becomes `api.pets`, untagged operations go to `api.default`. Each operation is a method named after its `operationId`. Its arguments come in this order, each present only when the operation has it: `urlParameter`, `queryParameter`, `querystring` (OpenAPI 3.2), `headerParameter`, `cookieParameter`, `body`, and last the optional per-call `options`:
+`createClient` returns one property per service, named after its tag: `PetsService` becomes `api.pets`, untagged operations go to `api.default`. A [`serviceFor`](#grouping-operations-into-services) function can group them differently. Each operation is a method named after its `operationId`. Its arguments come in this order, each present only when the operation has it: `urlParameter`, `queryParameter`, `querystring` (OpenAPI 3.2), `headerParameter`, `cookieParameter`, `body`, and last the optional per-call `options`:
 
 ```ts
 const controller = new AbortController();
@@ -220,11 +220,11 @@ A `send` of your own replaces it. It receives a `SendRequest` with the dist3 fie
 ```ts
 import { generate, loadConfig } from "open-api-gen";
 
-const config = await loadConfig(undefined, { input: "openapi.yaml", output: "src/api", naming: { properties: "camelCase" } });
+const config = await loadConfig(undefined, { input: "openapi.yaml", output: "src/api", naming: { properties: "camelCase" }, serviceFor: (operation) => operation.tags[0] });
 const { files, removed, warnings } = await generate(config); // writes into config.output, like the CLI
 ```
 
-`loadConfig(configPath, flags)` reads an optional config file and applies `flags` over it, with the keys of the [config file](#config-file). `buildIntermediateFormat` and `emit` expose the two stages separately, so a program can change the intermediate format before code is written (see [ARCH.md](ARCH.md)).
+`loadConfig(configPath, flags)` reads an optional config file and applies `flags` over it, with the keys of the [config file](#config-file), including `serviceFor`. `buildIntermediateFormat` and `emit` expose the two stages separately, so a program can change the intermediate format before code is written (see [ARCH.md](ARCH.md)).
 
 ## Configuration
 
@@ -239,7 +239,7 @@ open-api-gen <input> -o <output-directory> [options]
 | Option | Meaning |
 |---|---|
 | `-o, --output <dir>` | Output directory |
-| `-c, --config <file>` | Read settings from a config file; flags override it |
+| `-c, --config <file>` | Read settings from a [config file](#config-file), JSON or a JS/TS module; flags override it |
 | `--overlay <file>` | Apply an [OpenAPI Overlay](https://spec.openapis.org/overlay/v1.2.0.html) before generating; repeatable |
 | `--tag <tag>`, `--exclude-tag <tag>`, `--operation-id <id>` | Generate only part of the API, see [Filters](#filters); repeatable |
 | `--naming <preserve\|camelCase>` | Property names in App types. Default: `preserve` |
@@ -270,6 +270,27 @@ open-api-gen <input> -o <output-directory> [options]
 ```
 
 Paths in the file are relative to the file. Every key is optional except `input` and `output`, and unknown keys are errors. The values shown for `validateSpec`, `force` and `formats` are the defaults; `naming.properties` defaults to `preserve`, and `refRoot` to the input document's directory (the `.` above widens it to the config file's directory).
+
+A config file ending in `.js`, `.mjs`, `.cjs`, `.ts`, `.mts` or `.cts` is a module whose default export is the config, possibly as a promise. It takes the same keys, plus `serviceFor`, which JSON cannot hold. `defineConfig` adds type checking and completion:
+
+```ts
+// open-api-gen.config.ts
+import { defineConfig } from "open-api-gen";
+
+export default defineConfig({
+  input: "openapi.yaml",
+  output: "src/api",
+  serviceFor: (operation) => (operation.path.startsWith("/admin/") ? "admin" : undefined),
+});
+```
+
+A TypeScript config file needs Bun or Node.js 22.18 or later, which run TypeScript without a flag. A module config is code and runs with your permissions, so use only config files you trust.
+
+### Grouping operations into services
+
+By default an operation belongs to the service of its first tag. `serviceFor(operation)` is called for each operation and returns the name of its group, which is used like a tag: `"single pet"` becomes `SinglePetService` in `service/single-pet/` and `api.singlePet`. `undefined` keeps the first tag, and `""` puts the operation into `DefaultService`. A group with the name of a document tag gets that tag's description.
+
+`operation` holds `operationId`, `method` (upper case), `path` (templated, such as `/pets/{petId}`), `tags`, `summary` when the document has one, and `deprecated`. Two groups that map to the same class name or client property stop the run, as two such tags do. An error thrown by the function also stops the run, with the operationId in the message. `version.json` records the function's source text.
 
 ### Transforms
 
@@ -307,15 +328,15 @@ api/
   interface/read-write.ts                request and response variants of schemas with required readOnly or writeOnly properties
   interface/**/<Schema>.validate.ts      validators, for schemas a body uses
   interface/**/<Schema>.codec.ts         wire ↔ App converters, for schemas a transform changes
-  service/<tag>/<Tag>Service.ts          one class per tag; untagged operations go to DefaultService
+  service/<tag>/<Tag>Service.ts          one class per tag or serviceFor group; untagged operations go to DefaultService
   runtime/                               client, fetch, validation, conversion, JSON and webhook helpers, no dependencies
   version.json, open-api.json, open-api.yaml, intermediate-format.json
 ```
 
-Operations are grouped by their first tag, and a tag becomes a PascalCase class name: `Issue custom field values (apps)` becomes `IssueCustomFieldValuesAppsService` in the folder `issue-custom-field-values-apps`. An enum becomes a `<Name>Values` array declared `as const`, with the type derived from it: `type Name = typeof NameValues[number]`.
+Operations are grouped by their first tag unless [`serviceFor`](#grouping-operations-into-services) says otherwise, and a tag becomes a PascalCase class name: `Issue custom field values (apps)` becomes `IssueCustomFieldValuesAppsService` in the folder `issue-custom-field-values-apps`. An enum becomes a `<Name>Values` array declared `as const`, with the type derived from it: `type Name = typeof NameValues[number]`.
 
 - `open-api.json` and `open-api.yaml` hold the input document after bundling, overlays and filters.
-- `version.json` records the generator version, the time, the effective config and every warning of the run as `{ pointer, message }`, where `pointer` is a JSON Pointer into the bundled input document.
+- `version.json` records the generator version, the time, the effective config (a `serviceFor` function as its source text) and every warning of the run as `{ pointer, message }`, where `pointer` is a JSON Pointer into the bundled input document.
 - `intermediate-format.json` is the intermediate format the client was generated from; for the GitHub REST spec, as `make e2e` generates it, it is 40 MB.
 
 The generator writes only into a directory that is empty or holds its own earlier output. Files it created before and no longer produces are deleted; any other file stops the run unless `--force` is given. Even with `--force` such a file is never deleted, but one at a path the generator produces, such as `index.ts`, is overwritten. A folder is removed only when deleting a stale file empties it, and a symbolic link anywhere in the directory stops the run.

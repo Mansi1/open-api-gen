@@ -1,6 +1,7 @@
 // Every 3.0 / 3.1 / 3.2 difference ends here: the output is one version-independent model, so naming, transform
 // planning and Stage 2 never branch on the OpenAPI version.
 // VERIFIED: test/normalize.test.ts and the golden intermediate-format files cover 3.0, 3.1 and 3.2 fixtures.
+import type { ServiceFor } from "./config.ts";
 import type { OpenApiVersion } from "./load.ts";
 import { camel, kebab, pascal } from "./naming.ts";
 import { deref, escapePointerToken, isRef, mergePathItem, refPointer, resolve, unescapePointerToken } from "./refs.ts";
@@ -36,7 +37,7 @@ const MEDIA_TYPE_PREFERENCE = [/^application\/(.+\+)?json$/, /^multipart\/form-d
 const STRUCTURAL_TOKENS = ["components", "schemas", "$defs", "definitions", "properties", "items", "paths", "content", "schema"];
 
 /** Builds the intermediate format skeleton: declarations, services, operations. Transforms (codecs, renames) are added later by planTransforms. */
-export function normalize(document: JsonObject, version: OpenApiVersion, sourcePath: string): IntermediateFormat {
+export function normalize(document: JsonObject, version: OpenApiVersion, sourcePath: string, serviceFor?: ServiceFor): IntermediateFormat {
   const context: NormalizeContext = { document, version, namesByPointer: new Map(), declarations: new Map(), warnings: [], securitySchemes: normalizeSecuritySchemes(document), undefinedSchemeNames: new Set(), incoming: [] };
   const components = (document.components ?? {}) as JsonObject;
   const schemas = (components.schemas ?? {}) as JsonObject;
@@ -51,7 +52,7 @@ export function normalize(document: JsonObject, version: OpenApiVersion, sourceP
     addDeclaration(context, context.namesByPointer.get(pointer)!, "components", schema, pointer);
   }
 
-  const services = normalizeServices(context);
+  const services = normalizeServices(context, serviceFor);
   checkExportedNames([...context.declarations.values()], services);
   const info = (document.info ?? {}) as JsonObject;
   return {
@@ -495,7 +496,7 @@ function withoutAnnotations(node: TypeNode): TypeNode {
 
 // ---------------------------------------------------------------- operations
 
-function normalizeServices(context: NormalizeContext): Service[] {
+function normalizeServices(context: NormalizeContext, serviceFor: ServiceFor | undefined): Service[] {
   const paths = (context.document.paths ?? {}) as JsonObject;
   const tagObjects = (context.document.tags ?? []) as JsonObject[];
   const tagOrder = tagObjects.map((tag) => String(tag.name));
@@ -509,9 +510,9 @@ function normalizeServices(context: NormalizeContext): Service[] {
     for (const { method, operation, pointer } of operationsOf(context, pathItem, pathItemPointer)) {
       const normalized = normalizeOperation(context, { method, path, pathItem, pathItemPointer, operation, pointer, usedOperationIds });
       normalizeCallbacks(context, operation, normalized.operationId, pointer, usedOperationIds);
-      // Grouping by tag: the first tag wins; untagged operations share one service.
-      const tags = Array.isArray(operation.tags) ? operation.tags : [];
-      const tag = tags.length > 0 ? String(tags[0]) : "";
+      // Grouping by tag: the first tag wins; untagged operations share one service. serviceFor may pick another group.
+      const operationTags = Array.isArray(operation.tags) ? operation.tags.map((operationTag) => String(operationTag)) : [];
+      const tag = chooseService(serviceFor, normalized, operationTags) ?? operationTags[0] ?? "";
       let tagOperations = operationsByTag.get(tag);
       if (tagOperations === undefined) {
         tagOperations = [];
@@ -551,6 +552,30 @@ function normalizeServices(context: NormalizeContext): Service[] {
     });
   }
   return services;
+}
+
+/** Calls the user's serviceFor for one operation; names the operation in any error it throws or wrong value it returns. */
+function chooseService(serviceFor: ServiceFor | undefined, operation: Operation, tags: string[]): string | undefined {
+  if (serviceFor === undefined) {
+    return undefined;
+  }
+  let chosen: unknown;
+  try {
+    chosen = serviceFor({
+      operationId: operation.operationId,
+      method: operation.method,
+      path: operation.path,
+      tags: [...tags],
+      ...optionalText("summary", operation.summary),
+      deprecated: operation.deprecated === true,
+    });
+  } catch (error) {
+    throw new Error(`serviceFor failed for operation ${operation.operationId}: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  if (chosen !== undefined && typeof chosen !== "string") {
+    throw new Error(`serviceFor must return a string or undefined, got ${typeof chosen} for operation ${operation.operationId}`);
+  }
+  return chosen;
 }
 
 /**

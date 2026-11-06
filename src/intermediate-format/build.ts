@@ -39,7 +39,7 @@ export async function prepareDocument(config: Config): Promise<PreparedDocument>
 /** Stage 1: OpenAPI document + config → intermediate format. Everything Stage 2 needs is decided here. */
 export async function buildIntermediateFormat(config: Config, prepared?: PreparedDocument): Promise<IntermediateFormat> {
   const { document, version, warnings } = prepared ?? (await prepareDocument(config));
-  const normalized = normalize(document, version, config.input);
+  const normalized = normalize(document, version, config.input, config.serviceFor);
   const intermediateFormat = planTransforms(normalized, config);
   intermediateFormat.warnings.unshift(...warnings);
   return intermediateFormat;

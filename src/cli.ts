@@ -14,7 +14,8 @@ Generates a TypeScript client from an OpenAPI 3.0, 3.1 or 3.2 document (JSON or 
 
 Options:
   -o, --output <dir>                 output directory
-  -c, --config <file>                open-api-gen.config.json; flags override it
+  -c, --config <file>                config file: JSON, or a JS/TS module whose default
+                                     export is the config; flags override it
       --overlay <file>               apply an OpenAPI Overlay before generating (repeatable)
       --tag <tag>                    keep only operations with this tag (repeatable)
       --exclude-tag <tag>            drop operations with this tag (repeatable)

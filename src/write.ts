@@ -46,7 +46,9 @@ export function writeOutput(directory: string, files: Files, metadata: OutputMet
   }
 
   const allFiles: Files = new Map(files);
-  allFiles.set(VERSION_FILE, `${JSON.stringify(versionFile(metadata), null, 2)}\n`);
+  // A config function (serviceFor) is recorded by its source text, which JSON.stringify would drop without a trace.
+  const functionsAsSource = (_key: string, value: unknown) => (typeof value === "function" ? String(value) : value);
+  allFiles.set(VERSION_FILE, `${JSON.stringify(versionFile(metadata), functionsAsSource, 2)}\n`);
   allFiles.set("open-api.json", `${JSON.stringify(metadata.document, null, 2)}\n`);
   allFiles.set("open-api.yaml", stringifyYaml(metadata.document));
   allFiles.set(INTERMEDIATE_FORMAT_FILE, `${JSON.stringify(metadata.intermediateFormat, null, 2)}\n`);

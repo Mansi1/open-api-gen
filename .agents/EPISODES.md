@@ -61,3 +61,6 @@ Wrap: EVERY lead → test | .agents/VERIFY.py rule | one MEMORY line with BC, th
 2026-11-06T01:50:42Z s=f7b31668 FINDING src/emit/runtime/fetch-send.ts:createFetchSend catch / abortReason learn=test: scripts/browser-e2e.ts runs the timeout check in WebKit on every make e2e
 2026-11-06T01:50:42Z s=f7b31668 FINDING ARCH.md Operations/Observability (B01) learn=none: doc claim corrected; not mechanically checkable
 2026-11-06T01:50:42Z s=f7b31668 FINDING README.md client options (R03) learn=none: doc precondition added
+2026-11-06T16:56:44Z s=f7b31668 DONE fp=daab19b24211 cov=76.6% paths=ARCH.md,Makefile,README.md,bun.lock(+58)
+2026-11-06T17:13:15Z s=f7b31668 DONE fp=1c81ec652573 cov=76.7% paths=ARCH.md,Makefile,README.md,bun.lock(+61)
+2026-11-06T17:13:15Z s=f7b31668 FINDING README.md: Grouping operations into services (P precision) learn=none: doc wording; not mechanically checkable

@@ -101,6 +101,28 @@ log("INFO", `multi-file (external $refs, --ref-root): ${multiFileSummary.replace
 // 3c. Webhooks and callbacks: the smoke consumer parses payloads through this client's parseWebhook.
 run("node", [cli, join(repositoryRoot, "test", "fixtures", "webhooks-3.1.yaml"), "-o", join(clientsDirectory, "webhooks"), "--naming", "camelCase"], repositoryRoot);
 
+// 3d. A TypeScript config file run by Node.js: defineConfig from the installed package, serviceFor grouping by path.
+const serviceForConfigPath = join(consumerDirectory, "open-api-gen.config.ts");
+writeFileSync(serviceForConfigPath, [
+  'import { defineConfig, type OperationInfo } from "open-api-gen";',
+  "",
+  "export default defineConfig({",
+  `  input: ${JSON.stringify(join(repositoryRoot, "test", "fixtures", "petstore-3.0.yaml"))},`,
+  `  output: ${JSON.stringify(join(clientsDirectory, "service-for"))},`,
+  '  serviceFor: (operation: OperationInfo) => (operation.path.includes("{petId}") ? "single pet" : undefined),',
+  "});",
+  "",
+].join("\n"));
+run("node", [cli, "--config", serviceForConfigPath], consumerDirectory);
+const serviceForFolders = readdirSync(join(clientsDirectory, "service-for", "service")).sort();
+if (serviceForFolders.join(",") !== "pets,single-pet") {
+  throw new Error(`service-for: expected service folders pets and single-pet, got ${serviceForFolders.join(", ")}`);
+}
+const serviceForTsconfigPath = join(outputDirectory, "tsconfig.service-for.json");
+writeJson(serviceForTsconfigPath, { compilerOptions: { ...STRICT_OPTIONS, noEmit: true, typeRoots: [join(consumerDirectory, "node_modules", "@types")] }, include: ["clients/service-for/**/*.ts"] });
+run("node", [tsc, "-p", serviceForTsconfigPath], consumerDirectory);
+log("INFO", "service-for (TypeScript config file, serviceFor): services pets and single-pet, tsc --strict ok");
+
 // 4. The configured client (overlay + filter + camelCase + Date + Decimal hook), compiled with the consumer program.
 // VERIFIED: input/smoke.ts checks the Decimal hook, which comes from --transformer, so flag and config file merge in one run.
 const decimalTransformer = "format:int64=Decimal,../../../input/hooks/decimal.ts,toDecimal,fromDecimal";

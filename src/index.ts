@@ -10,7 +10,7 @@ import { writeOutput } from "./write.ts";
 
 export { emit, type Files } from "./emit/index.ts";
 export { buildIntermediateFormat, prepareDocument } from "./intermediate-format/build.ts";
-export { loadConfig, type Config, type ConfigInput } from "./intermediate-format/config.ts";
+export { defineConfig, loadConfig, type Config, type ConfigInput, type OperationInfo, type ServiceFor } from "./intermediate-format/config.ts";
 export type * from "./intermediate-format/types.ts";
 export { SpecValidationError } from "./intermediate-format/validate-spec.ts";
 
