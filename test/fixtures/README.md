@@ -13,6 +13,14 @@ Small hand-written OpenAPI documents. Each one exists to exercise a specific set
 | `servers-3.1.yaml` | yes | path-level `servers` with a variable, operation-level `servers` overriding them, a relative operation server, an operation without its own servers |
 | `read-write-only-3.0.yaml` | yes | required `readOnly` and `writeOnly` properties in schemas used as request and response bodies, also nested in an array and under a renamed (`created_at`) key |
 | `webhooks-3.1.yaml` | yes | a webhook with int64, date-time, snake_case and a required `writeOnly` property; a webhook without `operationId` or body; an operation callback with a runtime expression |
+| `optional-body-3.1.yaml` | yes | a 200 response with a body next to a 204 without one |
+| `union-response-3.1.yaml` | yes | a `oneOf` response with a transformed member (`Event` with a date-time) and `null` |
+| `multi-file/openapi.yaml` | yes | external `$ref` files: a path item, a parameter, a response and schemas in other files, a reference cycle across files, a file-local `#/$defs` reference, a reference back into the root document, example data with a `$ref` key |
 | `collision-3.1.yaml` | yes | `user_id` and `userId` collide under camelCase |
 | `invalid-3.1.yaml` | no | Schema Object with `type: 42` |
 | `swagger-2.0.json` | no (unsupported) | Swagger 2.0 rejection |
+
+Next to the documents:
+
+- `overlays/petstore-rename.yaml` retitles `petstore-3.0.yaml` and removes its delete operation; `overlays/break-schema.yaml` makes `petstore-3.0.yaml` invalid, to prove that validation runs after overlays.
+- `hooks/decimal.ts` is a user-defined transformer (int64 as a `Decimal` value object) for the transformer tests.
