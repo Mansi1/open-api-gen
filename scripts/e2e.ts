@@ -98,6 +98,9 @@ if (!readdirSync(join(multiFileDirectory, "interface", "components")).includes("
 const multiFileSummary = multiFileOutput.split("\n").find((line) => line.includes(" INFO generated ")) ?? multiFileOutput.trim();
 log("INFO", `multi-file (external $refs, --ref-root): ${multiFileSummary.replace(/^\S+ INFO /, "")}, tsc --strict ok`);
 
+// 3c. Webhooks and callbacks: the smoke consumer parses payloads through this client's parseWebhook.
+run("node", [cli, join(repositoryRoot, "test", "fixtures", "webhooks-3.1.yaml"), "-o", join(clientsDirectory, "webhooks"), "--naming", "camelCase"], repositoryRoot);
+
 // 4. The configured client (overlay + filter + camelCase + Date + Decimal hook), compiled with the consumer program.
 // VERIFIED: input/smoke.ts checks the Decimal hook, which comes from --transformer, so flag and config file merge in one run.
 const decimalTransformer = "format:int64=Decimal,../../../input/hooks/decimal.ts,toDecimal,fromDecimal";
@@ -110,7 +113,7 @@ copyFileSync(join(repositoryRoot, "input", "smoke.ts"), join(smokeDirectory, "sm
 const smokeConfigPath = join(outputDirectory, "tsconfig.smoke.json");
 writeJson(smokeConfigPath, {
   compilerOptions: { ...STRICT_OPTIONS, outDir: "build", rootDir: "..", typeRoots: [join(consumerDirectory, "node_modules", "@types")] },
-  include: ["clients/petstore-app/**/*.ts", "smoke/smoke.ts", "../input/hooks/*.ts"],
+  include: ["clients/petstore-app/**/*.ts", "clients/webhooks/**/*.ts", "smoke/smoke.ts", "../input/hooks/*.ts"],
 });
 run("node", [tsc, "-p", smokeConfigPath], consumerDirectory);
 writeJson(join(outputDirectory, "build", "package.json"), { type: "module" });

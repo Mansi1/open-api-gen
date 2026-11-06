@@ -594,6 +594,72 @@ export async function app(): Promise<void> {
   });
 });
 
+describe("webhooks and callbacks", () => {
+  const petText = '{"id":9007199254740993,"name":"Rex","created_at":"2026-01-02T03:04:05.000Z"}';
+
+  test("Stage 1 lists webhooks and callbacks with unique operationIds", async () => {
+    const intermediateFormat = await buildIntermediateFormat(await loadConfig(undefined, { input: "test/fixtures/webhooks-3.1.yaml", output: "out" }));
+    expect(intermediateFormat.incoming.map(({ kind, operationId, name, method, expression }) => ({ kind, operationId, name, method, expression }))).toEqual([
+      { kind: "callback", operationId: "subscribeOnEvent", name: "subscribe.onEvent", method: "POST", expression: "{$request.body#/callback_url}" },
+      { kind: "webhook", operationId: "onPetCreated", name: "petCreated", method: "POST", expression: undefined },
+      { kind: "webhook", operationId: "postHeartbeat", name: "heartbeat", method: "POST", expression: undefined },
+    ]);
+  });
+
+  test("parseWebhook parses raw JSON text or bytes, validates, and decodes App values losslessly", async () => {
+    const { client } = await generateClient("test/fixtures/webhooks-3.1.yaml", "webhooks-parse", { naming: { properties: "camelCase" } });
+    // Without options: plain JSON values, exactly what the body says (the int64 rounded by JSON.parse).
+    const wire = client.parseWebhook("onPetCreated", petText);
+    expect(wire).toEqual({ id: 9007199254740992, name: "Rex", created_at: "2026-01-02T03:04:05.000Z" });
+
+    // The secret is writeOnly, so its absence is valid: the API sends this payload.
+    const app = client.parseWebhook("onPetCreated", new TextEncoder().encode(petText), { validate: true, transform: true });
+    expect(app).toEqual({ id: 9007199254740993n, name: "Rex", createdAt: new Date("2026-01-02T03:04:05.000Z") });
+
+    const event = client.parseWebhook("subscribeOnEvent", { event_id: "e1", occurred_at: "2026-01-02T03:04:05.000Z" }, { transform: true });
+    expect(event.occurredAt).toEqual(new Date("2026-01-02T03:04:05.000Z"));
+
+    const invalid = (() => {
+      try {
+        return client.parseWebhook("onPetCreated", '{"id":"seven","name":"Rex"}', { validate: true });
+      } catch (error) {
+        return error;
+      }
+    })();
+    expect(invalid).toBeInstanceOf(client.WebhookValidationError);
+    expect((invalid as { issues: unknown[] }).issues).toEqual([
+      { path: "/created_at", message: "is required" },
+      { path: "/id", message: "must be a number, got string" },
+    ]);
+    expect(() => client.parseWebhook("noSuchHook", "{}")).toThrow('parseWebhook: unknown operationId "noSuchHook"');
+  });
+
+  test("payload types follow transform; unknown operationIds do not compile", async () => {
+    const { files } = await generateClient("test/fixtures/webhooks-3.1.yaml", "webhooks-types", { naming: { properties: "camelCase" } });
+    const usage = `import { parseWebhook, type WebhookPayloads } from './index.js';
+export function handle(body: string): void {
+    const wire = parseWebhook('onPetCreated', body);
+    const createdText: string = wire.created_at;
+    const app = parseWebhook('onPetCreated', body, { transform: true, validate: true });
+    const createdAt: Date = app.createdAt;
+    const id: bigint = app.id;
+    const heartbeat: undefined = parseWebhook('postHeartbeat', body);
+    const event: WebhookPayloads<true>['subscribeOnEvent'] = parseWebhook('subscribeOnEvent', body, { transform: true });
+    // @ts-expect-error no such webhook
+    parseWebhook('noSuchHook', body);
+    void [createdText, createdAt, id, heartbeat, event];
+}
+`;
+    expect(typeCheck(files, "webhooks-types", { "usage.ts": usage })).toEqual([]);
+  });
+
+  test("a document without webhooks or callbacks gets no webhooks module", async () => {
+    const { files } = await generateClient("test/fixtures/petstore-3.0.yaml", "webhooks-none");
+    expect(files.has("webhooks.ts")).toBe(false);
+    expect(files.get("index.ts")).not.toContain("parseWebhook");
+  });
+});
+
 describe("generated service files", () => {
   // Regression: a union response with a transformed member made the service import its validators twice
   // (once for the response validator, once for union routing), found by make e2e on the Jira spec.

@@ -232,6 +232,75 @@
     "HttpMethod": {
       "type": "string"
     },
+    "Incoming": {
+      "additionalProperties": false,
+      "description": "A webhook or callback operation: a request the API sends, whose body the generated parseWebhook reads.",
+      "properties": {
+        "deprecated": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string"
+        },
+        "expression": {
+          "description": "Callbacks only: the runtime expression of the URL the API calls, e.g. `{$request.body#/callbackUrl}`.",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "webhook",
+            "callback"
+          ],
+          "type": "string"
+        },
+        "method": {
+          "$ref": "#/definitions/HttpMethod"
+        },
+        "name": {
+          "description": "The webhook's name, or `<parent operationId>.<callback name>`.",
+          "type": "string"
+        },
+        "operationId": {
+          "description": "Unique across all operations; `<parent operationId><CallbackName>` or `<method><WebhookName>` when the document has none.",
+          "type": "string"
+        },
+        "requestBody": {
+          "additionalProperties": false,
+          "properties": {
+            "contentType": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "stream": {
+              "description": "OpenAPI 3.2 `itemSchema`: the body is a sequence of items (JSON Lines, SSE, ...), `type` is one item.",
+              "type": "boolean"
+            },
+            "type": {
+              "$ref": "#/definitions/TypeNode",
+              "description": "Omitted WHEN the media type has no schema."
+            }
+          },
+          "required": [
+            "contentType",
+            "required",
+            "stream"
+          ],
+          "type": "object"
+        },
+        "summary": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "operationId",
+        "name",
+        "method"
+      ],
+      "type": "object"
+    },
     "Operation": {
       "additionalProperties": false,
       "properties": {
@@ -1122,6 +1191,13 @@
       "description": "Transformers from the config, keyed `format:<name>` | `schema:<Name>`; referenced by `Codec.hook`.",
       "type": "object"
     },
+    "incoming": {
+      "description": "Requests the API sends to you: webhooks (OpenAPI 3.1+) and operation callbacks.",
+      "items": {
+        "$ref": "#/definitions/Incoming"
+      },
+      "type": "array"
+    },
     "intermediateFormatVersion": {
       "const": 1,
       "type": "number"
@@ -1187,6 +1263,7 @@
     "securitySchemes",
     "declarations",
     "services",
+    "incoming",
     "hooks",
     "warnings"
   ],

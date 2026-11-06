@@ -120,7 +120,7 @@ function asRecord(value: object | undefined): Record<string, unknown> {
 }
 
 /** The first five issues, one per line, for an error message. */
-function listIssues(issues: Issue[]): string {
+export function listIssues(issues: Issue[]): string {
   const listed = issues.slice(0, 5).map((issue) => `  ${issue.path === "" ? "(body)" : issue.path}: ${issue.message}`);
   const more = issues.length > 5 ? `\n  ... and ${issues.length - 5} more` : "";
   return `${listed.join("\n")}${more}`;

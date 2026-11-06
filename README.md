@@ -186,12 +186,30 @@ try {
 
 You can pass your own `send` instead. It receives a `SendRequest` with the dist3 fields `method`, `url` (the templated path, e.g. `/pets/{petId}`), `urlParameter`, `queryParameter`, `headerParameter`, `cookieParameter` and `body`. It also gets details such as `operationId`, `parameterStyles`, `responseContentTypes` and the per-call `options`, and resolves with the parsed response body.
 
+## Webhooks and callbacks
+
+Webhooks (OpenAPI 3.1+) and operation callbacks are requests the API sends to your server. For them the client generates `WebhookPayloads`, the payload type of each one, keyed by operationId, and `parseWebhook` to read a payload in your request handler:
+
+```ts
+import { parseWebhook, WebhookValidationError } from "./api/index.js";
+
+app.post("/hooks/pet-created", async (request) => {
+  const pet = parseWebhook("onPetCreated", await request.text(), { validate: true, transform: true });
+  pet.createdAt; // Date
+});
+```
+
+`parseWebhook` takes the raw body as text or bytes, or an already parsed value. JSON text is parsed losslessly with `transform`, so int64 values arrive exact. `validate: true` checks the payload against its schema and throws `WebhookValidationError` with `operationId`, `issues` and `body`; a required `writeOnly` property may be absent, as in responses. `transform: true` converts to App values as responses do. It does not check signatures: verify the request with the API's signing scheme before parsing.
+
+A webhook or callback without an operationId gets one: `<method><WebhookName>` (`postHeartbeat`) or `<parentOperationId><CallbackName>` (`subscribeOnEvent`). operationIds stay unique across operations, webhooks and callbacks; a duplicate gets a number and a warning.
+
 ## Generated files
 
 ```
 api/
   index.ts                               services, wire types and the runtime API
   client.ts                              servers and createClient
+  webhooks.ts                            payload types and parseWebhook, when the document has webhooks or callbacks
   interface/components/<Schema>.ts       one per schema, plus extracted inline enums and objects
   interface/request/<Operation>Request.ts
   interface/response/<Operation>Response.ts
@@ -263,7 +281,6 @@ Validators check `type`, `enum`, `const`, `required`, `properties`, `additionalP
 
 - Swagger 2.0 (convert it to 3.x first).
 - `$ref` to URLs (download the file and reference it by path).
-- Webhooks and callbacks.
 - JavaScript output.
 
 The keywords `if`/`then`/`else`, `not`, `patternProperties`, `dependentSchemas`, `dependentRequired`, `propertyNames`, `contains` and `unevaluated*` produce a warning and are ignored, so types and validation accept more than the schema does.

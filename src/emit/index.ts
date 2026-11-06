@@ -10,6 +10,7 @@ import { HEADER, importPath, type Files } from "./layout.ts";
 import { RUNTIME_SOURCES } from "./runtime-sources.ts";
 import { emitServices, servicePath } from "./services.ts";
 import { emitValidators } from "./validators.ts";
+import { emitWebhooks } from "./webhooks.ts";
 
 export type { Files } from "./layout.ts";
 
@@ -24,6 +25,7 @@ export function emit(intermediateFormat: IntermediateFormat): Files {
     ...emitCodecs(intermediateFormat),
     ...emitServices(intermediateFormat),
     ...emitClient(intermediateFormat),
+    ...emitWebhooks(intermediateFormat),
     // The header marks the runtime copies as generated too, so the next run may replace them.
     ...Object.entries(RUNTIME_SOURCES).map(([runtimePath, source]): [string, string] => [runtimePath, `${HEADER}${source}`]),
   ]);
@@ -49,5 +51,11 @@ function renderIndex(intermediateFormat: IntermediateFormat): string {
     "export { TransformError } from './runtime/transform.js';",
     "export type { Issue } from './runtime/validation.js';",
   );
+  if (intermediateFormat.incoming.length > 0) {
+    lines.push(
+      "export { parseWebhook, type WebhookPayloads } from './webhooks.js';",
+      "export { WebhookValidationError, type ParseWebhookOptions } from './runtime/webhooks.js';",
+    );
+  }
   return `${HEADER}${lines.join("\n")}\n`;
 }

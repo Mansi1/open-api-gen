@@ -41,6 +41,13 @@ export function planTransforms(input: IntermediateFormat, config: Config): Inter
     }
   }
 
+  // Webhook and callback payloads are read by parseWebhook, so they need validators and codecs like responses.
+  for (const incoming of intermediateFormat.incoming) {
+    if (incoming.requestBody?.type !== undefined) {
+      bodyTypes.push(incoming.requestBody.type);
+    }
+  }
+
   for (const declaration of intermediateFormat.declarations) {
     if (declaration.kind !== "parameter") {
       planNode(declaration.type, declaration.name, config, intermediateFormat);

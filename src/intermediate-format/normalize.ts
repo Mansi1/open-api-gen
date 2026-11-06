@@ -6,7 +6,7 @@ import { camel, kebab, pascal } from "./naming.ts";
 import { deref, escapePointerToken, isRef, mergePathItem, refPointer, resolve, unescapePointerToken } from "./refs.ts";
 import type {
   Body, Constraints, Declaration, DeclarationKind, Diagnostic, Discriminator, IntermediateFormat, Operation, Parameter, ParameterGroup,
-  ParameterLocation, Property, Response, Scalar, SecurityScheme, Server, ServerVariable, Service, TypeNode,
+  Incoming, ParameterLocation, Property, Response, Scalar, SecurityScheme, Server, ServerVariable, Service, TypeNode,
 } from "./types.ts";
 
 // The ONE module that knows how OpenAPI 3.0, 3.1 and 3.2 differ. Everything after it sees only the intermediate format.
@@ -21,6 +21,7 @@ type NormalizeContext = {
   declarations: Map<string, Declaration>;
   warnings: Diagnostic[];
   securitySchemes: Record<string, SecurityScheme>;
+  incoming: Incoming[];
   /** Undefined scheme names already warned about, so a spec using one everywhere gets one warning, not hundreds. */
   undefinedSchemeNames: Set<string>;
 };
@@ -36,7 +37,7 @@ const STRUCTURAL_TOKENS = ["components", "schemas", "$defs", "definitions", "pro
 
 /** Builds the intermediate format skeleton: declarations, services, operations. Transforms (codecs, renames) are added later by planTransforms. */
 export function normalize(document: JsonObject, version: OpenApiVersion, sourcePath: string): IntermediateFormat {
-  const context: NormalizeContext = { document, version, namesByPointer: new Map(), declarations: new Map(), warnings: [], securitySchemes: normalizeSecuritySchemes(document), undefinedSchemeNames: new Set() };
+  const context: NormalizeContext = { document, version, namesByPointer: new Map(), declarations: new Map(), warnings: [], securitySchemes: normalizeSecuritySchemes(document), undefinedSchemeNames: new Set(), incoming: [] };
   const components = (document.components ?? {}) as JsonObject;
   const schemas = (components.schemas ?? {}) as JsonObject;
 
@@ -66,6 +67,7 @@ export function normalize(document: JsonObject, version: OpenApiVersion, sourceP
     securitySchemes: context.securitySchemes,
     declarations: [...context.declarations.values()],
     services,
+    incoming: context.incoming,
     hooks: {},
     warnings: context.warnings,
   };
@@ -506,6 +508,7 @@ function normalizeServices(context: NormalizeContext): Service[] {
     const pathItem = mergePathItem(context.document, rawPathItem as JsonObject);
     for (const { method, operation, pointer } of operationsOf(context, pathItem, pathItemPointer)) {
       const normalized = normalizeOperation(context, { method, path, pathItem, pathItemPointer, operation, pointer, usedOperationIds });
+      normalizeCallbacks(context, operation, normalized.operationId, pointer, usedOperationIds);
       // Grouping by tag: the first tag wins; untagged operations share one service.
       const tags = Array.isArray(operation.tags) ? operation.tags : [];
       const tag = tags.length > 0 ? String(tags[0]) : "";
@@ -517,6 +520,8 @@ function normalizeServices(context: NormalizeContext): Service[] {
       tagOperations.push(normalized);
     }
   }
+
+  normalizeWebhooks(context, usedOperationIds);
 
   const tags = [...operationsByTag.keys()].sort((first, second) => tagRank(tagOrder, first) - tagRank(tagOrder, second));
   const services: Service[] = [];
@@ -725,6 +730,65 @@ function normalizeSecuritySchemes(document: JsonObject): Record<string, Security
     }
   }
   return result;
+}
+
+// ---------------------------------------------------------------- webhooks and callbacks
+
+/** One incoming operation per method of a webhook's or callback's path item. */
+function normalizeIncomingPathItem(
+  context: NormalizeContext,
+  rawPathItem: unknown,
+  pathItemPointer: string,
+  incoming: { kind: Incoming["kind"]; name: string; expression?: string; fallbackId: (method: string) => string },
+  usedOperationIds: Set<string>,
+): void {
+  const pathItem = mergePathItem(context.document, deref(context.document, rawPathItem).value as JsonObject);
+  for (const { method, operation, pointer } of operationsOf(context, pathItem, pathItemPointer)) {
+    const declaredId = typeof operation.operationId === "string" && operation.operationId !== "" ? operation.operationId : incoming.fallbackId(method);
+    const operationId = uniqueOperationId(context, { method, path: incoming.name, pathItem, pathItemPointer, operation: { ...operation, operationId: declaredId }, pointer, usedOperationIds });
+    const normalized: Incoming = {
+      kind: incoming.kind,
+      operationId,
+      name: incoming.name,
+      method,
+      ...(incoming.expression !== undefined ? { expression: incoming.expression } : {}),
+      ...optionalText("summary", operation.summary),
+      ...optionalText("description", operation.description),
+      ...optionalFlag("deprecated", operation.deprecated),
+    };
+    if (operation.requestBody !== undefined) {
+      const { value, pointer: refPointer } = deref(context.document, operation.requestBody);
+      const requestBodyObject = value as JsonObject;
+      const body = bodyOf(context, requestBodyObject.content as JsonObject | undefined, refPointer ?? `${pointer}/requestBody`, `${pascal(operationId)}Request`, "request");
+      if (body !== undefined) {
+        normalized.requestBody = { ...body, required: requestBodyObject.required === true };
+      }
+    }
+    context.incoming.push(normalized);
+  }
+}
+
+/** `webhooks` (OpenAPI 3.1+): name → path item. */
+function normalizeWebhooks(context: NormalizeContext, usedOperationIds: Set<string>): void {
+  const webhooks = (context.document.webhooks ?? {}) as JsonObject;
+  for (const [webhookName, pathItem] of Object.entries(webhooks)) {
+    const fallbackId = (method: string) => camel(`${method.toLowerCase()} ${webhookName}`);
+    normalizeIncomingPathItem(context, pathItem, `/webhooks/${escapePointerToken(webhookName)}`, { kind: "webhook", name: webhookName, fallbackId }, usedOperationIds);
+  }
+}
+
+/** An operation's `callbacks`: name → (runtime expression → path item). */
+function normalizeCallbacks(context: NormalizeContext, operation: JsonObject, parentOperationId: string, pointer: string, usedOperationIds: Set<string>): void {
+  const callbacks = (operation.callbacks ?? {}) as JsonObject;
+  for (const [callbackName, callbackValue] of Object.entries(callbacks)) {
+    const callback = deref(context.document, callbackValue).value as JsonObject;
+    for (const [expression, pathItem] of Object.entries(callback)) {
+      const pathItemPointer = `${pointer}/callbacks/${escapePointerToken(callbackName)}/${escapePointerToken(expression)}`;
+      const name = `${parentOperationId}.${callbackName}`;
+      const fallbackId = () => camel(`${parentOperationId} ${callbackName}`);
+      normalizeIncomingPathItem(context, pathItem, pathItemPointer, { kind: "callback", name, expression, fallbackId }, usedOperationIds);
+    }
+  }
 }
 
 function uniqueOperationId(context: NormalizeContext, input: OperationInput): string {

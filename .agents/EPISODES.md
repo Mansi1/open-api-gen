@@ -55,3 +55,5 @@ Wrap: EVERY lead → test | .agents/VERIFY.py rule | one MEMORY line with BC, th
 2026-11-06T00:42:53Z s=f7b31668 FINDING src/intermediate-format/bundle.ts:checkInsideRoot learn=test: test/bundle.test.ts 'files outside the reference root are refused...' includes the symlink case
 2026-11-06T00:42:53Z s=f7b31668 FINDING src/intermediate-format/bundle.ts:hasExternalReference learn=test: test/bundle.test.ts discriminator mapping test
 2026-11-06T00:42:53Z s=f7b31668 FINDING src/intermediate-format/bundle.ts:Bundler.walk arrays learn=none: found by reading; timing-dependent, not reproducible on demand
+2026-11-06T00:58:40Z s=f7b31668 DONE fp=82124ba83f28 cov=76.6% paths=ARCH.md,README.md,input/open-api-gen.config.json,input/smoke.ts(+53)
+2026-11-06T00:58:40Z s=f7b31668 FINDING src/intermediate-format/normalize.ts:normalizeWebhooks (design note) learn=none: whether users want tag filters on webhooks is unknown; falsifier: a user request to filter webhooks by tag

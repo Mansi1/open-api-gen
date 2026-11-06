@@ -1,0 +1,64 @@
+openapi: 3.1.1
+info:
+  title: Webhooks and callbacks
+  version: 1.0.0
+paths:
+  /subscriptions:
+    post:
+      operationId: subscribe
+      tags: [subscriptions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [callback_url]
+              properties:
+                callback_url: { type: string }
+      responses:
+        "201": { description: Subscribed }
+      callbacks:
+        onEvent:
+          "{$request.body#/callback_url}":
+            post:
+              summary: An event for a subscription
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema: { $ref: "#/components/schemas/Event" }
+              responses:
+                "200": { description: Received }
+webhooks:
+  petCreated:
+    post:
+      operationId: onPetCreated
+      description: Sent when a pet is created.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Pet" }
+      responses:
+        "200": { description: Received }
+  heartbeat:
+    post:
+      responses:
+        "200": { description: Received }
+components:
+  schemas:
+    Pet:
+      type: object
+      required: [id, name, created_at, secret]
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        created_at: { type: string, format: date-time }
+        secret: { type: string, writeOnly: true }
+    Event:
+      type: object
+      required: [event_id, occurred_at]
+      properties:
+        event_id: { type: string }
+        occurred_at: { type: string, format: date-time }

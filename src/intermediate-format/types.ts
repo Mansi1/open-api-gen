@@ -18,6 +18,8 @@ export type IntermediateFormat = {
   /** Every named type; Stage 2 writes one file per declaration. */
   declarations: Declaration[];
   services: Service[];
+  /** Requests the API sends to you: webhooks (OpenAPI 3.1+) and operation callbacks. */
+  incoming: Incoming[];
   /** Transformers from the config, keyed `format:<name>` | `schema:<Name>`; referenced by `Codec.hook`. */
   hooks: Record<string, Hook>;
   warnings: Diagnostic[];
@@ -133,6 +135,22 @@ export type Service = {
 };
 
 export type HttpMethod = string;
+
+/** A webhook or callback operation: a request the API sends, whose body the generated parseWebhook reads. */
+export type Incoming = {
+  kind: "webhook" | "callback";
+  /** Unique across all operations; `<parent operationId><CallbackName>` or `<method><WebhookName>` when the document has none. */
+  operationId: string;
+  /** The webhook's name, or `<parent operationId>.<callback name>`. */
+  name: string;
+  method: HttpMethod;
+  /** Callbacks only: the runtime expression of the URL the API calls, e.g. `{$request.body#/callbackUrl}`. */
+  expression?: string;
+  summary?: string;
+  description?: string;
+  deprecated?: boolean;
+  requestBody?: Body & { required: boolean };
+};
 
 export type ParameterLocation = "path" | "query" | "header" | "cookie";
 

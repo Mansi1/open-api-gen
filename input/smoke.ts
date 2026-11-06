@@ -3,6 +3,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
 import { Decimal } from "../../input/hooks/decimal.js";
+import { parseWebhook, WebhookValidationError } from "../clients/webhooks/index.js";
 import { ApiError, createClient, createFetchSend, isApiError, RequestValidationError, ResponseValidationError, servers, StoreService, type Middleware } from "../clients/petstore-app/index.js";
 
 type Received = { method: string; url: string; body: string; contentType: string; apiKey: string };
@@ -118,6 +119,17 @@ try {
     requestError = error;
   }
   check(requestError instanceof RequestValidationError && received.length === sentBefore, "validateRequest rejects an invalid body before sending");
+
+  const payload = '{"id":9007199254740993,"name":"Rex","created_at":"2026-01-02T03:04:05.000Z"}';
+  const pet = parseWebhook("onPetCreated", payload, { validate: true, transform: true });
+  check(pet.id === 9007199254740993n && pet.createdAt instanceof Date, "parseWebhook decodes a webhook payload to App values, int64 exact");
+  let webhookError: unknown;
+  try {
+    parseWebhook("subscribeOnEvent", '{"event_id":1}', { validate: true });
+  } catch (error) {
+    webhookError = error;
+  }
+  check(webhookError instanceof WebhookValidationError, "parseWebhook rejects an invalid callback payload");
 } finally {
   server.close();
 }
