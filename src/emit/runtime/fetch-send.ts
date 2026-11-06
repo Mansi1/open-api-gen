@@ -133,6 +133,7 @@ export function createFetchSend(options: FetchSendOptions): Send {
     // A fresh Request per attempt: headers() may hand out a refreshed token, the timeout restarts, and middleware
     // sees a standard Request it can replace. The encoded body (string, FormData, Blob, bytes) is reusable across attempts.
     let response: Response | undefined;
+    let attemptSignal: AbortSignal | undefined;
     for (let attempt = 0; response === undefined; attempt++) {
       const headers = await buildHeaders(options, request, bodyContentType);
       const authQuery = await applyAuth(options, request, headers);
@@ -152,8 +153,10 @@ export function createFetchSend(options: FetchSendOptions): Send {
       if (body !== undefined) {
         init.body = body;
       }
+      attemptSignal = undefined;
       if (signals.length > 0) {
-        init.signal = signals.length === 1 ? signals[0]! : AbortSignal.any(signals);
+        attemptSignal = signals.length === 1 ? signals[0]! : AbortSignal.any(signals);
+        init.signal = attemptSignal;
       }
       let fetchRequest = new Request(attemptUrl, init);
       for (const hooks of middleware) {
@@ -165,8 +168,11 @@ export function createFetchSend(options: FetchSendOptions): Send {
         answer = await fetchFunction(fetchRequest);
       } catch (error) {
         // The caller's own abort ends everything; a network error or timeout may be retried.
-        if (callOptions.signal?.aborted === true || attempt >= retriesAllowed) {
-          throw error;
+        if (callOptions.signal?.aborted === true) {
+          throw callOptions.signal.reason;
+        }
+        if (attempt >= retriesAllowed) {
+          throw abortReason(error, attemptSignal);
         }
         await wait(backoff(retry, attempt), callOptions.signal);
         continue;
@@ -192,8 +198,25 @@ export function createFetchSend(options: FetchSendOptions): Send {
     if (request.stream) {
       return readStream(response, request.lossless) as Result;
     }
-    return (await readBody(response, request.lossless)) as Result;
+    try {
+      return (await readBody(response, request.lossless)) as Result;
+    } catch (error) {
+      // The timeout and the caller's signal also cover reading the body.
+      throw abortReason(error, attemptSignal);
+    }
   };
+}
+
+/**
+ * The abort reason WHEN the attempt's signal fired, else the error itself. The Fetch standard rejects with the
+ * signal's reason (a TimeoutError for AbortSignal.timeout), and Chromium, Firefox, Node.js and Bun do; WebKit 27.2
+ * rejects with a generic AbortError instead (VERIFIED in a probe), so the reason is taken from the signal itself.
+ */
+function abortReason(error: unknown, signal: AbortSignal | undefined): unknown {
+  if (signal?.aborted === true && signal.reason !== undefined) {
+    return signal.reason;
+  }
+  return error;
 }
 
 /** Client headers, then header parameters, cookies and content type; auth and finishHeaders follow. */

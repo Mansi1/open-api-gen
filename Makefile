@@ -34,6 +34,8 @@ setup: ## install pinned tools (mise.toml) and exactly the locked dependencies
 	@if [ -f mise.toml ] || [ -f .tool-versions ]; then command -v mise >/dev/null 2>&1 || curl -fsSL https://mise.run | sh; mise install; fi
 	@if [ -f uv.lock ]; then command -v uv >/dev/null 2>&1 || curl -LsSf https://astral.sh/uv/install.sh | sh; uv sync --locked; fi
 	@if [ -f bun.lock ] || [ -f bun.lockb ]; then command -v bun >/dev/null 2>&1 || curl -fsSL https://bun.sh/install | bash; bun install --frozen-lockfile; fi
+	@# The browser e2e needs the engines of the pinned Playwright version.
+	@if grep -q '"playwright"' package.json; then bunx playwright install chromium firefox webkit; fi
 
 start stop restart status log: ; @echo "∅ $@: no service (library + CLI)"
 
@@ -47,7 +49,7 @@ intermediate-format-schema: ; @bunx ts-json-schema-generator --path src/intermed
 intermediate-format-schema-check: ; @bunx ts-json-schema-generator --path src/intermediate-format/types.ts --type IntermediateFormat --tsconfig tsconfig.json --no-type-check --no-top-ref | cmp -s - src/intermediate-format/intermediate-format.schema.json || { echo "src/intermediate-format/intermediate-format.schema.json is stale: run make intermediate-format-schema"; exit 1; }
 # Runtime modules copied into generated clients; regenerate after editing src/emit/runtime/.
 runtime-sources: ; @bun scripts/embed-runtime.ts  ## embed src/emit/runtime/*.ts into src/emit/runtime-sources.ts
-e2e:      ; bun scripts/e2e.ts  ## build + pack, install into a clean consumer, generate every example with node, tsc --strict, run input/smoke.ts
+e2e:      ; bun scripts/e2e.ts && bun scripts/browser-e2e.ts  ## build + pack, install into a clean consumer, generate every example with node, tsc --strict, run input/smoke.ts; then input/browser-smoke.ts in Chromium, Firefox and WebKit
 
 # What CI runs; the gate runs the same verbs one by one and fails while verify skips any. Fail-fast order: cheapest first.
 verify: lint test coverage e2e ## what CI runs: every gate verb, cheapest first

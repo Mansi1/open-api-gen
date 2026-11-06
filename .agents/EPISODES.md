@@ -57,3 +57,7 @@ Wrap: EVERY lead → test | .agents/VERIFY.py rule | one MEMORY line with BC, th
 2026-11-06T00:42:53Z s=f7b31668 FINDING src/intermediate-format/bundle.ts:Bundler.walk arrays learn=none: found by reading; timing-dependent, not reproducible on demand
 2026-11-06T00:58:40Z s=f7b31668 DONE fp=82124ba83f28 cov=76.6% paths=ARCH.md,README.md,input/open-api-gen.config.json,input/smoke.ts(+53)
 2026-11-06T00:58:40Z s=f7b31668 FINDING src/intermediate-format/normalize.ts:normalizeWebhooks (design note) learn=none: whether users want tag filters on webhooks is unknown; falsifier: a user request to filter webhooks by tag
+2026-11-06T01:50:42Z s=f7b31668 DONE fp=61aa8a714ca6 cov=76.6% paths=ARCH.md,Makefile,README.md,bun.lock(+58)
+2026-11-06T01:50:42Z s=f7b31668 FINDING src/emit/runtime/fetch-send.ts:createFetchSend catch / abortReason learn=test: scripts/browser-e2e.ts runs the timeout check in WebKit on every make e2e
+2026-11-06T01:50:42Z s=f7b31668 FINDING ARCH.md Operations/Observability (B01) learn=none: doc claim corrected; not mechanically checkable
+2026-11-06T01:50:42Z s=f7b31668 FINDING README.md client options (R03) learn=none: doc precondition added

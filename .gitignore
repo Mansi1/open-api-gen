@@ -47,3 +47,4 @@ node_modules/
 coverage/
 .cache/
 __pycache__/
+!input/browser-smoke.ts

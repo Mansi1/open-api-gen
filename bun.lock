@@ -13,6 +13,7 @@
         "@types/bun": "1.4.4",
         "oxlint": "1.90.0",
         "pkgroll": "2.29.0",
+        "playwright": "1.65.0",
         "ts-json-schema-generator": "2.9.0",
         "typescript": "6.0.3",
       },
@@ -290,6 +291,10 @@
     "picomatch": ["picomatch@4.0.7", "", {}, "sha512-qcJu88Q2IWqJsDD529JKMdwGm/dvInW4HvQnRwiH9JtihJvzGOscDtHE3x1pBKeUOTysQ8kVmLnJ2kJu7yhcGA=="],
 
     "pkgroll": ["pkgroll@2.29.0", "", { "dependencies": { "@rollup/plugin-alias": "^6.0.0", "@rollup/plugin-commonjs": "^29.0.3", "@rollup/plugin-dynamic-import-vars": "^2.1.5", "@rollup/plugin-json": "^6.1.0", "@rollup/plugin-node-resolve": "^16.0.3", "cjs-module-lexer": "^2.2.1", "esbuild": "^0.28.2", "magic-string": "^1.2.2", "rollup": "^4.62.5", "rollup-plugin-import-trace": "^1.0.1", "rollup-pluginutils": "^2.8.2", "signal-exit": "4.1.0", "yaml": "^2.9.0" }, "peerDependencies": { "@typescript/typescript6": "^6", "typescript": "^4.1 || ^5.0 || ^6.0 || ^7.0" }, "optionalPeers": ["@typescript/typescript6", "typescript"], "bin": { "pkgroll": "dist/cli.mjs" } }, "sha512-nTWWA9J9mClHnwzDonKtgpP3iZxWNHo6YH4Jo6BfsRNv54v35GtqNFVG6E+WrsSNLiWu8es6PyjSH/EiBDex1g=="],
+
+    "playwright": ["playwright@1.65.0", "", { "dependencies": { "playwright-core": "1.65.0" }, "bin": { "playwright": "cli.js" } }, "sha512-F3AMWcR44qMBt4kq+6Kb6mX7bjGXshktKFOPULd7reED6ZJWevjbNRqysP7q+AATE9kdPEZBibex1BYsvpVoeA=="],
+
+    "playwright-core": ["playwright-core@1.65.0", "", { "bin": { "playwright-core": "cli.js" } }, "sha512-vNSKgH6YqtN7cdT/L334zo0a+YwkrpicyrHJlWWPIm/Q+Nn2SWInil01oT0mbu96U4GgoRtCYQD9CzJQgju+lA=="],
 
     "punycode": ["punycode@2.3.1", "", {}, "sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg=="],
 
