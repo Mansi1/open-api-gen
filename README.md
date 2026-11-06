@@ -361,4 +361,4 @@ make setup && make verify
 
 ## License
 
-MIT, as declared in `package.json`.
+MIT; see [LICENSE](LICENSE).
