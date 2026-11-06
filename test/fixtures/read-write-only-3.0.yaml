@@ -18,11 +18,42 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Account" }
+  /teams:
+    post:
+      operationId: createTeam
+      tags: [teams]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Team" }
+      responses:
+        "201":
+          description: The stored team
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Team" }
 components:
   schemas:
+    Team:
+      type: object
+      required: [id, name, members]
+      properties:
+        id: { type: integer, readOnly: true }
+        name: { type: string }
+        members:
+          type: array
+          items: { $ref: "#/components/schemas/Member" }
+    Member:
+      type: object
+      required: [id, email, token]
+      properties:
+        id: { type: integer, readOnly: true }
+        email: { type: string }
+        token: { type: string, writeOnly: true }
     Account:
       type: object
-      required: [id, name, password]
+      required: [id, name, password, created_at]
       properties:
         id: { type: integer, format: int64, readOnly: true }
         name: { type: string, minLength: 1 }

@@ -196,6 +196,7 @@ api/
   interface/response/<Operation>Response.ts
   interface/parameter/<Operation>{Path,Query,Header,Cookie}Parameter.ts
   interface/app/<Schema>.ts              App types, only for schemas a transform changes
+  interface/read-write.ts                request and response variants of schemas with required readOnly or writeOnly properties
   interface/**/<Schema>.validate.ts      response validators, for schemas a request or response uses
   interface/**/<Schema>.codec.ts         wire ↔ App converters, for schemas a transform changes
   service/<tag>/<Tag>Service.ts          one class per tag; untagged operations go to DefaultService
@@ -245,7 +246,7 @@ Paths in the file are relative to the file. Every key is optional except `input`
 | 3.2 | the `query` method, `additionalOperations` (custom methods such as `PURGE`), `in: querystring`, streamed responses with `itemSchema` |
 | all | `allOf`, `oneOf` and `anyOf` with discriminators (explicit and implicit mapping), recursive schemas, maps, path-level parameters, every parameter style |
 
-Validators check `type`, `enum`, `const`, `required`, `properties`, `additionalProperties`, `items`, `prefixItems`, the numeric, string and array bounds, `pattern`, `uniqueItems`, `allOf`, `anyOf` and `oneOf`. Formats are annotations, as in JSON Schema, except `date-time` and `date`, which are checked because the client converts them. A required `readOnly` property is not required in a request body, and a required `writeOnly` property is not required in a response body. OpenAPI 3.0 specifies this; 3.1 and 3.2 leave it to the API, and the client applies the same rule. Request validation covers bodies; parameters are checked by their TypeScript types only.
+Validators check `type`, `enum`, `const`, `required`, `properties`, `additionalProperties`, `items`, `prefixItems`, the numeric, string and array bounds, `pattern`, `uniqueItems`, `allOf`, `anyOf` and `oneOf`. Formats are annotations, as in JSON Schema, except `date-time` and `date`, which are checked because the client converts them. A required `readOnly` property is not required in a request body, and a required `writeOnly` property is not required in a response body. OpenAPI 3.0 specifies this; 3.1 and 3.2 leave it to the API, and the client applies the same rule. The method types follow it: `createAccount` takes `Account$Request`, in which `id` is optional, and returns `Account$Response`, in which `password` is optional. Both are defined in `interface/read-write.ts` on top of `Account`, also for schemas nested in arrays, unions and `allOf`. A property whose App type comes from a transformer keeps its declared type. Request validation covers bodies; parameters are checked by their TypeScript types only.
 
 **Not supported:**
 

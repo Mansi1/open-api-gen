@@ -49,3 +49,5 @@ Wrap: EVERY lead → test | .agents/VERIFY.py rule | one MEMORY line with BC, th
 2026-11-05T23:04:30Z s=f7b31668 FINDING README.md operation servers paragraph (B evidence) learn=none: a doc example claim, not mechanically checkable
 2026-11-05T23:53:51Z s=f7b31668 DONE fp=0fcacf566a23 cov=77.1% paths=ARCH.md,README.md,input/open-api-gen.config.json,input/smoke.ts(+35)
 2026-11-05T23:53:51Z s=f7b31668 FINDING src/emit/runtime/validation.ts:object required check learn=test: test/services.test.ts request validation read/write-only test fails without the fix (probe 2026-11-06)
+2026-11-06T00:12:44Z s=f7b31668 DONE fp=a2a2508880fe cov=77.0% paths=ARCH.md,README.md,input/open-api-gen.config.json,input/smoke.ts(+36)
+2026-11-06T00:12:44Z s=f7b31668 FINDING src/emit/services.ts:directionalType (first version, replaced by src/emit/read-write.ts) learn=test: make e2e generates Stripe and GitHub and times each; a regression hangs it

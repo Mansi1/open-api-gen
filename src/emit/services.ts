@@ -7,6 +7,7 @@ import { CodecRenderer } from "./codecs.ts";
 import { TypeImports, TypeRenderer } from "./interfaces.ts";
 import { HEADER, importPath, type Files } from "./layout.ts";
 import { docComment, identifier, propertyKey, quote } from "./names.ts";
+import { readWriteImport, ReadWriteVariants, type Direction } from "./read-write.ts";
 import { renderServer } from "./servers.ts";
 import { ValidatorRenderer } from "./validators.ts";
 
@@ -20,9 +21,14 @@ export function servicePath(service: Service): string {
 export function emitServices(intermediateFormat: IntermediateFormat): Files {
   const files: Files = new Map();
   const declarationsByName = new Map(intermediateFormat.declarations.map((declaration) => [declaration.name, declaration]));
+  // One variants file for the whole API, shared by every service.
+  const readWrite = new ReadWriteVariants(intermediateFormat, declarationsByName);
   for (const service of intermediateFormat.services) {
     const path = servicePath(service);
-    files.set(path, new ServiceFile(path, service, intermediateFormat, declarationsByName).render());
+    files.set(path, new ServiceFile(path, service, intermediateFormat, declarationsByName, readWrite).render());
+  }
+  for (const [path, content] of readWrite.files()) {
+    files.set(path, content);
   }
   return files;
 }
@@ -35,12 +41,14 @@ class ServiceFile {
   private readonly appTypes: TypeRenderer;
   private readonly validators: ValidatorRenderer;
   private readonly codecs: CodecRenderer;
+  private readonly readWriteNames = new Set<string>();
 
   constructor(
     private readonly path: string,
     private readonly service: Service,
     intermediateFormat: IntermediateFormat,
     private readonly declarationsByName: Map<string, Declaration>,
+    private readonly readWrite: ReadWriteVariants,
   ) {
     this.wireTypes = new TypeRenderer(path, "wire", intermediateFormat, declarationsByName, this.typeImports);
     this.appTypes = new TypeRenderer(path, "app", intermediateFormat, declarationsByName, this.typeImports, true);
@@ -61,6 +69,7 @@ class ServiceFile {
       `import * as serviceRuntime from ${quote(runtimePath)};`,
       `import type * as fetchRuntime from ${quote(importPath(this.path, "runtime/fetch-send.ts"))};`,
       this.typeImports.lines().trimEnd(),
+      readWriteImport(this.path, this.readWriteNames),
       this.validators.importLines(false).trimEnd(),
       this.codecs.importLines(false).trimEnd(),
     ].filter((line) => line !== "");
@@ -215,14 +224,30 @@ class ServiceFile {
     return `{ ${locations.join(", ")} }`;
   }
 
-  /** `Transform extends true ? App : Wire`, or just the type when both shapes are the same. */
-  private shapedType(node: TypeNode): string {
-    const wire = this.wireTypes.render(node);
-    const app = this.appTypes.render(node);
+  /**
+   * `Transform extends true ? App : Wire`, or just the type when both shapes are the same. Bodies with required
+   * readOnly (request) or writeOnly (response) properties use their variant from interface/read-write.ts.
+   */
+  private shapedType(node: TypeNode, direction: Direction): string {
+    const wire = this.variantType(node, false, direction) ?? this.wireTypes.render(node);
+    const app = this.variantType(node, true, direction) ?? this.appTypes.render(node);
     if (wire === app) {
       return wire;
     }
     return `Transform extends true ? ${app} : ${wire}`;
+  }
+
+  private variantType(node: TypeNode, isApp: boolean, direction: Direction): string | undefined {
+    const variant = this.readWrite.bodyType(node, isApp, direction);
+    if (variant === undefined) {
+      return undefined;
+    }
+    if ("name" in variant) {
+      this.readWriteNames.add(variant.name);
+      return variant.name;
+    }
+    this.readWriteNames.add(variant.arrayOf);
+    return `Array<${variant.arrayOf}>`;
   }
 
   private renderMethod(operation: Operation, descriptor: string): string {
@@ -244,7 +269,7 @@ class ServiceFile {
       }
     }
     if (operation.requestBody !== undefined) {
-      const bodyType = operation.requestBody.type === undefined ? "unknown" : this.shapedType(operation.requestBody.type);
+      const bodyType = operation.requestBody.type === undefined ? "unknown" : this.shapedType(operation.requestBody.type, "request");
       argumentsList.push({ name: "body", type: bodyType, required: operation.requestBody.required });
     }
 
@@ -265,7 +290,7 @@ class ServiceFile {
     const fullSignature = signature === "" ? "options?: serviceRuntime.RequestOptions" : `${signature}, options?: serviceRuntime.RequestOptions`;
 
     const successType = this.successType(operation);
-    let resultType = successType === undefined ? "void" : this.shapedType(successType);
+    let resultType = successType === undefined ? "void" : this.shapedType(successType, "response");
     if (successType !== undefined && this.mayAnswerWithoutBody(operation)) {
       resultType = `(${resultType}) | undefined`;
     }

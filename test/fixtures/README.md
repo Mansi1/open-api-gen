@@ -11,7 +11,7 @@ Small hand-written OpenAPI documents. Each one exists to exercise a specific set
 | `errors-3.1.yaml` | yes | typed error responses (404 and 422 with distinct bodies, `default`), schemas named like runtime exports (`ApiError`, `RequestOptions`, `ServiceConfig`) |
 | `security-3.1.yaml` | yes | every security scheme kind (http bearer, basic and custom, apiKey in header, query and cookie, oauth2, mutualTLS), document-level requirement, `security: []`, AND and OR requirements, optional `{}`, an undefined scheme name |
 | `servers-3.1.yaml` | yes | path-level `servers` with a variable, operation-level `servers` overriding them, a relative operation server, an operation without its own servers |
-| `read-write-only-3.0.yaml` | yes | required `readOnly` and `writeOnly` properties in one schema used as request and response body (request validation) |
+| `read-write-only-3.0.yaml` | yes | required `readOnly` and `writeOnly` properties in schemas used as request and response bodies, also nested in an array and under a renamed (`created_at`) key |
 | `collision-3.1.yaml` | yes | `user_id` and `userId` collide under camelCase |
 | `invalid-3.1.yaml` | no | Schema Object with `type: 42` |
 | `swagger-2.0.json` | no (unsupported) | Swagger 2.0 rejection |

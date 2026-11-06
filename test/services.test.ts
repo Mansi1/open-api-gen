@@ -559,6 +559,41 @@ describe("request validation", () => {
   });
 });
 
+describe("read-only and write-only types", () => {
+  test("request bodies may omit required readOnly properties, responses may lack writeOnly ones, also nested and renamed", async () => {
+    const { files } = await generateClient("test/fixtures/read-write-only-3.0.yaml", "read-write-types", { naming: { properties: "camelCase" } });
+    const usage = `import { createClient } from './index.js';
+export async function wire(): Promise<void> {
+    const api = createClient({ baseUrl: 'http://localhost' });
+    const account = await api.accounts.createAccount({ name: 'ada', password: 'secret' });
+    const id: number = account.id;
+    const createdAt: string = account.created_at;
+    // @ts-expect-error password is write-only, so a response may lack it
+    const password: string = account.password;
+    // @ts-expect-error name stays required in requests
+    await api.accounts.createAccount({ password: 'secret' });
+    const team = await api.teams.createTeam({ name: 'core', members: [{ email: 'ada@example.com', token: 't' }] });
+    const memberId: number = team.members[0]!.id;
+    // @ts-expect-error a member token is write-only
+    const token: string = team.members[0]!.token;
+    // @ts-expect-error a member email stays required in requests
+    await api.teams.createTeam({ name: 'core', members: [{ token: 't' }] });
+    void [id, createdAt, password, memberId, token];
+}
+export async function app(): Promise<void> {
+    const api = createClient({ baseUrl: 'http://localhost', transform: true });
+    const account = await api.accounts.createAccount({ name: 'ada', password: 'secret' });
+    const id: bigint = account.id;
+    const createdAt: Date = account.createdAt;
+    // @ts-expect-error App types use camelCase names
+    void account.created_at;
+    void [id, createdAt];
+}
+`;
+    expect(typeCheck(files, "read-write-types", { "usage.ts": usage })).toEqual([]);
+  });
+});
+
 describe("generated service files", () => {
   // Regression: a union response with a transformed member made the service import its validators twice
   // (once for the response validator, once for union routing), found by make e2e on the Jira spec.
